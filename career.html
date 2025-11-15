@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Career & Salary Paths - Path Pal">
+  <title>Career & Salary Paths - Path Pal</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/style.css">
+  <meta name="theme-color" content="#0d8c79">
+</head>
+<body>
+  <div class="desktop-message">
+    <h1>📱 Mobile App Required</h1>
+    <p>Path Pal is designed for mobile devices. Please open this site on your mobile phone or tablet.</p>
+  </div>
+
+  <header>
+    <div class="header-content container">
+      <div class="logo">
+        <img src="/media/logo/logo64x64.png" alt="Path Pal Logo">
+        <h1>Path Pal</h1>
+      </div>
+      <button class="menu-toggle" aria-label="Toggle menu">☰</button>
+    </div>
+  </header>
+
+  <nav>
+    <ul>
+      <li><a href="/index.html">Home</a></li>
+      <li><a href="/profile.html">My Profile</a></li>
+      <li><a href="/odds.html">Admissions Odds</a></li>
+      <li><a href="/simulator.html">"What If" Simulator</a></li>
+      <li><a href="/explorer.html">College Explorer</a></li>
+      <li><a href="/career.html" class="active">Career & Salary Paths</a></li>
+      <li><a href="/activities.html">Activity & Internship Recs</a></li>
+      <li><a href="/planner.html">4-Year Planner</a></li>
+      <li><a href="/messages.html">Messages</a></li>
+      <li><a href="/saved.html">Saved Colleges</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <div class="container">
+      <h2 style="color: var(--primary-green); margin: 1rem 0;">Career & Salary Paths</h2>
+
+      <!-- Major Selector -->
+      <div class="card">
+        <h3>Select Your Intended Major</h3>
+        <div class="form-group">
+          <select id="career-major" onchange="loadCareerData()">
+            <option value="">Select a major</option>
+            <option value="Computer Science">Computer Science</option>
+            <option value="Engineering">Engineering</option>
+            <option value="Business">Business</option>
+            <option value="Medicine/Pre-Med">Medicine/Pre-Med</option>
+            <option value="Law/Pre-Law">Law/Pre-Law</option>
+            <option value="Education">Education</option>
+            <option value="Psychology">Psychology</option>
+            <option value="Biology">Biology</option>
+            <option value="Mathematics">Mathematics</option>
+            <option value="Economics">Economics</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Outcome Charts -->
+      <div id="career-outcomes" style="display: none;">
+        <div class="card">
+          <h3>Career Outcomes</h3>
+          <div id="salary-chart" style="margin-top: 1rem;"></div>
+          <div id="placement-rate" style="margin-top: 1rem;"></div>
+        </div>
+
+        <!-- Career Path Cards -->
+        <div class="card">
+          <h3>Example Career Paths</h3>
+          <div id="career-paths" style="margin-top: 1rem;"></div>
+        </div>
+
+        <!-- Top Industries -->
+        <div class="card">
+          <h3>Top Industries</h3>
+          <div id="top-industries" style="margin-top: 1rem;"></div>
+        </div>
+
+        <!-- Strong Colleges for This Path -->
+        <div class="card">
+          <h3>Strong Colleges for This Career Path</h3>
+          <div id="strong-colleges" style="margin-top: 1rem;"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2024 Path Pal. Your personalized Pal for your college path.</p>
+    </div>
+  </footer>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    const careerData = {
+      'Computer Science': {
+        medianSalary: 105000,
+        placementRate: 0.92,
+        industries: ['Technology', 'Finance', 'Consulting', 'Healthcare', 'Entertainment'],
+        paths: [
+          { title: 'Software Engineer', salary: '110k-180k', skills: 'Programming, System Design', degree: 'Bachelor\'s' },
+          { title: 'Data Scientist', salary: '115k-165k', skills: 'Statistics, ML, Python', degree: 'Master\'s preferred' },
+          { title: 'Product Manager', salary: '120k-200k', skills: 'Leadership, Technical Background', degree: 'Bachelor\'s + MBA' }
+        ],
+        strongColleges: ['MIT', 'Stanford University', 'University of California Berkeley']
+      },
+      'Engineering': {
+        medianSalary: 95000,
+        placementRate: 0.89,
+        industries: ['Manufacturing', 'Technology', 'Energy', 'Construction', 'Aerospace'],
+        paths: [
+          { title: 'Mechanical Engineer', salary: '85k-130k', skills: 'CAD, Problem Solving', degree: 'Bachelor\'s' },
+          { title: 'Electrical Engineer', salary: '90k-140k', skills: 'Circuit Design, Electronics', degree: 'Bachelor\'s' },
+          { title: 'Software Engineer', salary: '110k-180k', skills: 'Programming, System Design', degree: 'Bachelor\'s' }
+        ],
+        strongColleges: ['MIT', 'Stanford University', 'University of Michigan']
+      },
+      'Business': {
+        medianSalary: 75000,
+        placementRate: 0.88,
+        industries: ['Finance', 'Consulting', 'Marketing', 'Real Estate', 'Retail'],
+        paths: [
+          { title: 'Business Analyst', salary: '65k-100k', skills: 'Analytics, Excel, SQL', degree: 'Bachelor\'s' },
+          { title: 'Financial Analyst', salary: '70k-120k', skills: 'Financial Modeling, Excel', degree: 'Bachelor\'s' },
+          { title: 'Management Consultant', salary: '85k-150k', skills: 'Problem Solving, Communication', degree: 'Bachelor\'s + MBA' }
+        ],
+        strongColleges: ['University of Pennsylvania', 'MIT', 'Stanford University']
+      },
+      'Medicine/Pre-Med': {
+        medianSalary: 220000,
+        placementRate: 0.94,
+        industries: ['Healthcare', 'Hospital Systems', 'Private Practice', 'Research', 'Pharmaceuticals'],
+        paths: [
+          { title: 'Physician', salary: '200k-400k', skills: 'Medical Knowledge, Patient Care', degree: 'MD' },
+          { title: 'Surgeon', salary: '300k-600k', skills: 'Surgical Skills, Precision', degree: 'MD + Residency' },
+          { title: 'Medical Researcher', salary: '90k-150k', skills: 'Research Methodology, Analysis', degree: 'PhD or MD' }
+        ],
+        strongColleges: ['Harvard University', 'Johns Hopkins University', 'Stanford University']
+      }
+    };
+
+    function loadCareerData() {
+      const major = document.getElementById('career-major').value;
+      const container = document.getElementById('career-outcomes');
+
+      if (!major || !careerData[major]) {
+        container.style.display = 'none';
+        return;
+      }
+
+      container.style.display = 'block';
+      const data = careerData[major];
+
+      // Salary chart
+      const salaryContainer = document.getElementById('salary-chart');
+      const maxSalary = 200000;
+      const percentage = (data.medianSalary / maxSalary) * 100;
+      salaryContainer.innerHTML = `
+        <div style="background: var(--light-mint); padding: 1rem; border-radius: 8px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span><strong>Median Starting Salary</strong></span>
+            <span style="color: var(--primary-green); font-weight: bold; font-size: 1.2rem;">$${(data.medianSalary / 1000).toFixed(0)}k</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${percentage}%; background: var(--primary-green);"></div>
+          </div>
+        </div>
+      `;
+
+      // Placement rate
+      document.getElementById('placement-rate').innerHTML = `
+        <div style="background: var(--light-mint); padding: 1rem; border-radius: 8px; text-align: center;">
+          <div style="font-size: 1.5rem; font-weight: bold; color: var(--primary-green);">${(data.placementRate * 100).toFixed(0)}%</div>
+          <div style="color: var(--text-light); font-size: 0.9rem;">Job Placement Rate</div>
+        </div>
+      `;
+
+      // Career paths
+      const pathsContainer = document.getElementById('career-paths');
+      pathsContainer.innerHTML = data.paths.map(path => `
+        <div style="background: var(--light-mint); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid var(--primary-green);">
+          <h4 style="color: var(--primary-green); margin-bottom: 0.5rem;">${path.title}</h4>
+          <p style="margin-bottom: 0.5rem;"><strong>Salary Range:</strong> ${path.salary}</p>
+          <p style="margin-bottom: 0.5rem;"><strong>Required Skills:</strong> ${path.skills}</p>
+          <p style="color: var(--text-light); font-size: 0.9rem;"><strong>Degree:</strong> ${path.degree}</p>
+        </div>
+      `).join('');
+
+      // Top industries
+      document.getElementById('top-industries').innerHTML = `
+        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+          ${data.industries.map(industry => `
+            <span class="badge badge-target" style="background: var(--light-mint); color: var(--primary-green);">
+              ${industry}
+            </span>
+          `).join('')}
+        </div>
+      `;
+
+      // Strong colleges
+      const collegesContainer = document.getElementById('strong-colleges');
+      collegesContainer.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          ${data.strongColleges.map((college, index) => `
+            <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: var(--light-mint); border-radius: 8px;">
+              <span style="font-size: 1.5rem;">${index + 1}.</span>
+              <span style="flex: 1; font-weight: bold; color: var(--primary-green);">${college}</span>
+              <button class="btn btn-secondary" onclick="exploreCollege('${college}')" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
+                Explore
+              </button>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function exploreCollege(collegeName) {
+      window.location.href = `/explorer.html?search=${encodeURIComponent(collegeName)}`;
+    }
+
+    // Load major from profile if available
+    document.addEventListener('DOMContentLoaded', () => {
+      const profile = UserProfile.get();
+      if (profile.majors && profile.majors.length > 0) {
+        const majorSelect = document.getElementById('career-major');
+        const firstMajor = profile.majors[0];
+        if (Array.from(majorSelect.options).some(opt => opt.value === firstMajor)) {
+          majorSelect.value = firstMajor;
+          loadCareerData();
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+

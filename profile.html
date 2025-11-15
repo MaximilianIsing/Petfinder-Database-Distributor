@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="My Profile - Path Pal">
+  <title>My Profile - Path Pal</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/style.css">
+  <meta name="theme-color" content="#0d8c79">
+</head>
+<body>
+  <div class="desktop-message">
+    <h1>📱 Mobile App Required</h1>
+    <p>Path Pal is designed for mobile devices. Please open this site on your mobile phone or tablet.</p>
+  </div>
+
+  <header>
+    <div class="header-content container">
+      <div class="logo">
+        <img src="/media/logo/logo64x64.png" alt="Path Pal Logo">
+        <h1>Path Pal</h1>
+      </div>
+      <button class="menu-toggle" aria-label="Toggle menu">☰</button>
+    </div>
+  </header>
+
+  <nav>
+    <ul>
+      <li><a href="/index.html">Home</a></li>
+      <li><a href="/profile.html" class="active">My Profile</a></li>
+      <li><a href="/odds.html">Admissions Odds</a></li>
+      <li><a href="/simulator.html">"What If" Simulator</a></li>
+      <li><a href="/explorer.html">College Explorer</a></li>
+      <li><a href="/career.html">Career & Salary Paths</a></li>
+      <li><a href="/activities.html">Activity & Internship Recs</a></li>
+      <li><a href="/planner.html">4-Year Planner</a></li>
+      <li><a href="/messages.html">Messages</a></li>
+      <li><a href="/saved.html">Saved Colleges</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <div class="container">
+      <h2 style="color: var(--primary-green); margin: 1rem 0;">My Profile</h2>
+
+      <!-- Profile Overview -->
+      <div class="card">
+        <h3>Broad Overview</h3>
+        <div class="profile-header" style="text-align: center; margin-bottom: 1.5rem;">
+          <div style="width: 100px; height: 100px; background: var(--light-mint); border-radius: 50%; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; font-size: 3rem;">
+            👤
+          </div>
+          <h2 id="profile-name" style="color: var(--primary-green);">Student Name</h2>
+        </div>
+
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" id="name" placeholder="Enter your name">
+        </div>
+
+        <div class="form-group">
+          <label>Current Grade</label>
+          <select id="grade">
+            <option value="">Select grade</option>
+            <option value="9th">9th Grade</option>
+            <option value="10th">10th Grade</option>
+            <option value="11th">11th Grade</option>
+            <option value="12th">12th Grade</option>
+            <option value="college-freshman">College Freshman</option>
+            <option value="college-sophomore">College Sophomore</option>
+            <option value="college-junior">College Junior</option>
+            <option value="college-senior">College Senior</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Academic Info -->
+      <div class="card">
+        <h3>Academic Information</h3>
+        
+        <div class="form-group">
+          <label>GPA</label>
+          <input type="number" id="gpa" step="0.01" min="0" max="5" placeholder="e.g., 3.75">
+        </div>
+
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="weighted" style="width: auto; margin-right: 0.5rem;">
+            Weighted GPA
+          </label>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>SAT Score</label>
+            <input type="number" id="sat" min="400" max="1600" placeholder="e.g., 1450">
+          </div>
+          <div class="form-group">
+            <label>ACT Score</label>
+            <input type="number" id="act" min="1" max="36" placeholder="e.g., 32">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>PSAT Score</label>
+          <input type="number" id="psat" min="320" max="1520" placeholder="e.g., 1280">
+        </div>
+      </div>
+
+      <!-- Intended Majors -->
+      <div class="card">
+        <h3>Intended Majors</h3>
+        <div class="form-group">
+          <label>Select your intended major(s)</label>
+          <select id="majors" multiple style="height: 120px;">
+            <option value="Computer Science">Computer Science</option>
+            <option value="Engineering">Engineering</option>
+            <option value="Business">Business</option>
+            <option value="Medicine/Pre-Med">Medicine/Pre-Med</option>
+            <option value="Law/Pre-Law">Law/Pre-Law</option>
+            <option value="Education">Education</option>
+            <option value="Psychology">Psychology</option>
+            <option value="Biology">Biology</option>
+            <option value="Chemistry">Chemistry</option>
+            <option value="Mathematics">Mathematics</option>
+            <option value="Physics">Physics</option>
+            <option value="Economics">Economics</option>
+            <option value="Political Science">Political Science</option>
+            <option value="Journalism">Journalism</option>
+            <option value="Art">Art</option>
+            <option value="Music">Music</option>
+            <option value="Other">Other</option>
+          </select>
+          <small>Hold Ctrl/Cmd to select multiple</small>
+        </div>
+        <div id="selected-majors" style="margin-top: 1rem;"></div>
+      </div>
+
+      <!-- Activities & Interests -->
+      <div class="card">
+        <h3>Activities & Interests</h3>
+        <div class="form-group">
+          <label>Extracurricular Activities</label>
+          <textarea id="activities" rows="4" placeholder="List your activities, clubs, sports, volunteer work, etc."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Career Goals</label>
+          <textarea id="career-goals" rows="3" placeholder="What are your career aspirations?"></textarea>
+        </div>
+      </div>
+
+      <div style="margin: 2rem 0;">
+        <button class="btn btn-primary" onclick="saveProfile()" style="width: 100%;">Save Profile</button>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2024 Path Pal. Your personalized Pal for your college path.</p>
+    </div>
+  </footer>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    // Load profile data
+    document.addEventListener('DOMContentLoaded', () => {
+      const profile = UserProfile.get();
+      
+      document.getElementById('name').value = profile.name || '';
+      document.getElementById('grade').value = profile.grade || '';
+      document.getElementById('gpa').value = profile.gpa || '';
+      document.getElementById('weighted').checked = profile.weighted !== false;
+      document.getElementById('sat').value = profile.sat || '';
+      document.getElementById('act').value = profile.act || '';
+      document.getElementById('psat').value = profile.psat || '';
+      document.getElementById('activities').value = profile.activities || '';
+      document.getElementById('career-goals').value = profile.careerGoals || '';
+      
+      // Load selected majors
+      if (profile.majors && profile.majors.length > 0) {
+        const majorsSelect = document.getElementById('majors');
+        Array.from(majorsSelect.options).forEach(option => {
+          if (profile.majors.includes(option.value)) {
+            option.selected = true;
+          }
+        });
+      }
+      
+      updateProfileName();
+      updateSelectedMajors();
+      
+      // Listen for changes
+      document.getElementById('majors').addEventListener('change', updateSelectedMajors);
+      document.getElementById('name').addEventListener('input', updateProfileName);
+    });
+
+    function updateProfileName() {
+      const name = document.getElementById('name').value || 'Student Name';
+      document.getElementById('profile-name').textContent = name;
+    }
+
+    function updateSelectedMajors() {
+      const majorsSelect = document.getElementById('majors');
+      const selected = Array.from(majorsSelect.selectedOptions).map(o => o.value);
+      const container = document.getElementById('selected-majors');
+      
+      if (selected.length > 0) {
+        container.innerHTML = '<strong>Selected:</strong> ' + selected.join(', ');
+      } else {
+        container.innerHTML = '';
+      }
+    }
+
+    function saveProfile() {
+      const profile = {
+        name: document.getElementById('name').value,
+        grade: document.getElementById('grade').value,
+        gpa: document.getElementById('gpa').value,
+        weighted: document.getElementById('weighted').checked,
+        sat: document.getElementById('sat').value,
+        act: document.getElementById('act').value,
+        psat: document.getElementById('psat').value,
+        majors: Array.from(document.getElementById('majors').selectedOptions).map(o => o.value),
+        activities: document.getElementById('activities').value,
+        careerGoals: document.getElementById('career-goals').value
+      };
+      
+      UserProfile.save(profile);
+      showNotification('Profile saved successfully!', 'success');
+      
+      // Update profile name display
+      updateProfileName();
+    }
+  </script>
+</body>
+</html>
+

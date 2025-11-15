@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Admissions Odds - Path Pal">
+  <title>Admissions Odds - Path Pal</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/style.css">
+  <meta name="theme-color" content="#0d8c79">
+</head>
+<body>
+  <div class="desktop-message">
+    <h1>📱 Mobile App Required</h1>
+    <p>Path Pal is designed for mobile devices. Please open this site on your mobile phone or tablet.</p>
+  </div>
+
+  <header>
+    <div class="header-content container">
+      <div class="logo">
+        <img src="/media/logo/logo64x64.png" alt="Path Pal Logo">
+        <h1>Path Pal</h1>
+      </div>
+      <button class="menu-toggle" aria-label="Toggle menu">☰</button>
+    </div>
+  </header>
+
+  <nav>
+    <ul>
+      <li><a href="/index.html">Home</a></li>
+      <li><a href="/profile.html">My Profile</a></li>
+      <li><a href="/odds.html" class="active">Admissions Odds</a></li>
+      <li><a href="/simulator.html">"What If" Simulator</a></li>
+      <li><a href="/explorer.html">College Explorer</a></li>
+      <li><a href="/career.html">Career & Salary Paths</a></li>
+      <li><a href="/activities.html">Activity & Internship Recs</a></li>
+      <li><a href="/planner.html">4-Year Planner</a></li>
+      <li><a href="/messages.html">Messages</a></li>
+      <li><a href="/saved.html">Saved Colleges</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <div class="container">
+      <h2 style="color: var(--primary-green); margin: 1rem 0;">Admissions Odds</h2>
+
+      <div class="card">
+        <p>Select colleges from your saved list or explore to see your acceptance odds based on your profile.</p>
+        <button class="btn btn-secondary" onclick="window.location.href='/explorer.html'" style="margin-top: 1rem; width: 100%;">
+          Explore Colleges
+        </button>
+      </div>
+
+      <!-- Selected Colleges -->
+      <div id="odds-results"></div>
+
+      <!-- Profile Comparison Section -->
+      <div class="card" id="profile-comparison" style="display: none;">
+        <h3>Profile Comparison</h3>
+        <div id="comparison-content"></div>
+      </div>
+
+      <!-- AI Tips Section -->
+      <div class="card" id="ai-tips" style="display: none;">
+        <h3>AI Tips to Improve Your Odds</h3>
+        <div id="tips-content" class="loading">Loading personalized tips...</div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2024 Path Pal. Your personalized Pal for your college path.</p>
+    </div>
+  </footer>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      loadSavedCollegesOdds();
+      loadAITips();
+    });
+
+    function loadSavedCollegesOdds() {
+      const savedColleges = SavedColleges.get();
+      const profile = UserProfile.get();
+      const container = document.getElementById('odds-results');
+
+      if (savedColleges.length === 0) {
+        container.innerHTML = `
+          <div class="card">
+            <p>No saved colleges yet. <a href="/explorer.html" style="color: var(--primary-green);">Explore colleges</a> and save them to see your admission odds.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = '<h3 style="color: var(--primary-green); margin-bottom: 1rem;">Your Admission Odds</h3>';
+
+      savedColleges.forEach(college => {
+        const odds = calculateAdmissionOdds(profile, college);
+        const category = categorizeSchool(odds);
+        
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.marginBottom = '1rem';
+        
+        card.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+            <div>
+              <h3 style="color: var(--primary-green); margin-bottom: 0.5rem;">${college.name}</h3>
+              <p style="color: var(--text-light); font-size: 0.9rem;">${college.location} • ${college.type} • ${(college.acceptanceRate * 100).toFixed(1)}% acceptance rate</p>
+            </div>
+            <span class="badge badge-${category.category}">${category.label}</span>
+          </div>
+          <div style="background: var(--light-mint); padding: 1rem; border-radius: 8px; text-align: center;">
+            <div style="font-size: 2.5rem; font-weight: bold; color: var(--primary-green);">${odds.toFixed(0)}%</div>
+            <div style="color: var(--text-light); font-size: 0.9rem;">Acceptance Probability</div>
+          </div>
+        `;
+        
+        container.appendChild(card);
+      });
+    }
+
+    async function loadAITips() {
+      const profile = UserProfile.get();
+      const savedColleges = SavedColleges.get();
+
+      if (!profile.name || savedColleges.length === 0) {
+        document.getElementById('ai-tips').style.display = 'none';
+        return;
+      }
+
+      document.getElementById('ai-tips').style.display = 'block';
+
+      try {
+        const message = `Based on my profile (GPA: ${profile.gpa || 'not set'}, SAT: ${profile.sat || 'not set'}, ACT: ${profile.act || 'not set'}, Grade: ${profile.grade || 'not set'}), what are 3-5 actionable suggestions to improve my admission odds for college? Be specific and concise.`;
+        
+        const response = await sendChatMessage(message);
+        const tips = response.message.split('\n').filter(line => line.trim());
+        
+        const tipsContent = document.getElementById('tips-content');
+        tipsContent.innerHTML = '<ul style="list-style: none; padding: 0;">' + 
+          tips.map(tip => `<li style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-color);">• ${tip.trim().replace(/^[-•]\s*/, '')}</li>`).join('') + 
+          '</ul>';
+      } catch (error) {
+        document.getElementById('tips-content').innerHTML = '<p style="color: var(--text-light);">Unable to load tips at this time. Please try again later.</p>';
+      }
+    }
+  </script>
+</body>
+</html>
+

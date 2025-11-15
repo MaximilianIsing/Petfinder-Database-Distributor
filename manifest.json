@@ -1,24 +1,54 @@
 {
-  "name": "Pathpal",
-  "short_name": "Pathpal",
-  "description": "Pathpal Progressive Web App",
+  "name": "Path Pal",
+  "short_name": "Path Pal",
+  "description": "Your personalized Pal for your college path.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#000000",
-  "orientation": "portrait-primary",
+  "theme_color": "#0d8c79",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "icon-192.jpg",
-      "sizes": "192x192",
-      "type": "image/jpg",
-      "purpose": "any maskable"
+      "src": "/media/logo/logo64x64.png",
+      "sizes": "64x64",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "icon-512.jpg",
-      "sizes": "512x512",
-      "type": "image/jpg",
+      "src": "/media/logo/logo128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/media/logo/logo256x256.png",
+      "sizes": "256x256",
+      "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "shortcuts": [
+    {
+      "name": "My Profile",
+      "short_name": "Profile",
+      "description": "View your academic profile",
+      "url": "/profile.html",
+      "icons": [{ "src": "/media/logo/logo128x128.png", "sizes": "128x128" }]
+    },
+    {
+      "name": "Admissions Odds",
+      "short_name": "Odds",
+      "description": "Check your admission chances",
+      "url": "/odds.html",
+      "icons": [{ "src": "/media/logo/logo128x128.png", "sizes": "128x128" }]
+    },
+    {
+      "name": "AI Chat",
+      "short_name": "Chat",
+      "description": "Get instant AI guidance",
+      "url": "/messages.html",
+      "icons": [{ "src": "/media/logo/logo128x128.png", "sizes": "128x128" }]
     }
   ]
 }

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AI Chat Advisor - Path Pal">
+  <title>Messages - Path Pal</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/style.css">
+  <meta name="theme-color" content="#0d8c79">
+</head>
+<body>
+  <div class="desktop-message">
+    <h1>📱 Mobile App Required</h1>
+    <p>Path Pal is designed for mobile devices. Please open this site on your mobile phone or tablet.</p>
+  </div>
+
+  <header>
+    <div class="header-content container">
+      <div class="logo">
+        <img src="/media/logo/logo64x64.png" alt="Path Pal Logo">
+        <h1>Path Pal</h1>
+      </div>
+      <button class="menu-toggle" aria-label="Toggle menu">☰</button>
+    </div>
+  </header>
+
+  <nav>
+    <ul>
+      <li><a href="/index.html">Home</a></li>
+      <li><a href="/profile.html">My Profile</a></li>
+      <li><a href="/odds.html">Admissions Odds</a></li>
+      <li><a href="/simulator.html">"What If" Simulator</a></li>
+      <li><a href="/explorer.html">College Explorer</a></li>
+      <li><a href="/career.html">Career & Salary Paths</a></li>
+      <li><a href="/activities.html">Activity & Internship Recs</a></li>
+      <li><a href="/planner.html">4-Year Planner</a></li>
+      <li><a href="/messages.html" class="active">Messages</a></li>
+      <li><a href="/saved.html">Saved Colleges</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <div class="container">
+      <h2 style="color: var(--primary-green); margin: 1rem 0;">AI Chat Advisor</h2>
+
+      <div class="card">
+        <h3>24/7 Personal Counselor</h3>
+        <p>Ask any question — from admissions strategy to course advice — and get instant AI guidance.</p>
+      </div>
+
+      <!-- Chat Interface -->
+      <div class="chat-container">
+        <div class="chat-messages" id="chat-messages">
+          <div class="message ai">
+            <strong>Path Pal AI Advisor:</strong> Hello! I'm your 24/7 personal counselor. Ask me anything about college admissions, course planning, career advice, or anything else related to your college path. How can I help you today?
+          </div>
+        </div>
+
+        <div class="chat-input-container">
+          <form class="chat-input-form" id="chat-form" onsubmit="sendMessage(event)">
+            <input 
+              type="text" 
+              id="message-input" 
+              placeholder="Ask me anything..." 
+              required
+              autocomplete="off"
+            />
+            <button type="submit">Send</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Quick Questions -->
+      <div class="card" style="margin-top: 1rem;">
+        <h3>Quick Questions</h3>
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <button class="btn btn-secondary" onclick="askQuickQuestion('What courses should I take next semester?')">
+            📚 Course Recommendations
+          </button>
+          <button class="btn btn-secondary" onclick="askQuickQuestion('How can I improve my admission odds?')">
+            📊 Improve Admission Odds
+          </button>
+          <button class="btn btn-secondary" onclick="askQuickQuestion('What activities should I focus on?')">
+            🏃 Activity Suggestions
+          </button>
+          <button class="btn btn-secondary" onclick="askQuickQuestion('How should I prepare for college applications?')">
+            📝 Application Prep
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2024 Path Pal. Your personalized Pal for your college path.</p>
+    </div>
+  </footer>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    let chatHistory = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Load chat history
+      chatHistory = Storage.get('chatHistory', []);
+      loadChatHistory();
+      
+      // Focus input
+      document.getElementById('message-input').focus();
+    });
+
+    function loadChatHistory() {
+      const container = document.getElementById('chat-messages');
+      
+      // Clear except welcome message
+      container.innerHTML = '<div class="message ai"><strong>Path Pal AI Advisor:</strong> Hello! I\'m your 24/7 personal counselor. Ask me anything about college admissions, course planning, career advice, or anything else related to your college path. How can I help you today?</div>';
+      
+      // Load saved messages
+      chatHistory.forEach(msg => {
+        addMessageToChat(msg.text, msg.sender, false);
+      });
+      
+      // Scroll to bottom
+      container.scrollTop = container.scrollHeight;
+    }
+
+    async function sendMessage(event) {
+      event.preventDefault();
+      
+      const input = document.getElementById('message-input');
+      const message = input.value.trim();
+      
+      if (!message) return;
+      
+      // Clear input
+      input.value = '';
+      
+      // Add user message
+      addMessageToChat(message, 'user', true);
+      
+      // Show loading
+      const loadingId = addMessageToChat('Thinking...', 'ai', true);
+      
+      try {
+        // Get user profile for context
+        const profile = UserProfile.get();
+        const context = [
+          {
+            role: 'system',
+            content: `You are a helpful college admissions counselor and academic advisor. The student's profile: Grade: ${profile.grade || 'not set'}, GPA: ${profile.gpa || 'not set'}, SAT: ${profile.sat || 'not set'}, ACT: ${profile.act || 'not set'}, Majors: ${(profile.majors || []).join(', ') || 'not specified'}, Career Goals: ${profile.careerGoals || 'not specified'}. Provide personalized, actionable advice.`
+          },
+          ...chatHistory.slice(-4).map(msg => ({
+            role: msg.sender === 'user' ? 'user' : 'assistant',
+            content: msg.text
+          }))
+        ];
+        
+        const response = await sendChatMessage(message, context);
+        
+        // Remove loading message
+        removeMessage(loadingId);
+        
+        // Add AI response
+        addMessageToChat(response.message, 'ai', true);
+        
+        // Save to history
+        chatHistory.push({ text: message, sender: 'user' });
+        chatHistory.push({ text: response.message, sender: 'ai' });
+        
+        // Keep last 20 messages
+        if (chatHistory.length > 20) {
+          chatHistory = chatHistory.slice(-20);
+        }
+        
+        Storage.set('chatHistory', chatHistory);
+      } catch (error) {
+        removeMessage(loadingId);
+        addMessageToChat('Sorry, I encountered an error. Please try again later.', 'ai', true);
+        console.error('Chat error:', error);
+      }
+    }
+
+    function addMessageToChat(text, sender, scroll = false) {
+      const container = document.getElementById('chat-messages');
+      const messageDiv = document.createElement('div');
+      const messageId = 'msg-' + Date.now() + '-' + Math.random();
+      messageDiv.id = messageId;
+      messageDiv.className = `message ${sender}`;
+      
+      if (sender === 'user') {
+        messageDiv.innerHTML = `<strong>You:</strong> ${text}`;
+      } else {
+        messageDiv.innerHTML = `<strong>Path Pal AI Advisor:</strong> ${text}`;
+      }
+      
+      container.appendChild(messageDiv);
+      
+      if (scroll) {
+        container.scrollTop = container.scrollHeight;
+      }
+      
+      return messageId;
+    }
+
+    function removeMessage(messageId) {
+      const message = document.getElementById(messageId);
+      if (message) {
+        message.remove();
+      }
+    }
+
+    function askQuickQuestion(question) {
+      document.getElementById('message-input').value = question;
+      document.getElementById('chat-form').dispatchEvent(new Event('submit'));
+    }
+  </script>
+</body>
+</html>
+

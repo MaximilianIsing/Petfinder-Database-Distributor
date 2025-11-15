@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="What If Simulator - Path Pal">
+  <title>"What If" Simulator - Path Pal</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/style.css">
+  <meta name="theme-color" content="#0d8c79">
+</head>
+<body>
+  <div class="desktop-message">
+    <h1>📱 Mobile App Required</h1>
+    <p>Path Pal is designed for mobile devices. Please open this site on your mobile phone or tablet.</p>
+  </div>
+
+  <header>
+    <div class="header-content container">
+      <div class="logo">
+        <img src="/media/logo/logo64x64.png" alt="Path Pal Logo">
+        <h1>Path Pal</h1>
+      </div>
+      <button class="menu-toggle" aria-label="Toggle menu">☰</button>
+    </div>
+  </header>
+
+  <nav>
+    <ul>
+      <li><a href="/index.html">Home</a></li>
+      <li><a href="/profile.html">My Profile</a></li>
+      <li><a href="/odds.html">Admissions Odds</a></li>
+      <li><a href="/simulator.html" class="active">"What If" Simulator</a></li>
+      <li><a href="/explorer.html">College Explorer</a></li>
+      <li><a href="/career.html">Career & Salary Paths</a></li>
+      <li><a href="/activities.html">Activity & Internship Recs</a></li>
+      <li><a href="/planner.html">4-Year Planner</a></li>
+      <li><a href="/messages.html">Messages</a></li>
+      <li><a href="/saved.html">Saved Colleges</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <div class="container">
+      <h2 style="color: var(--primary-green); margin: 1rem 0;">"What If" Simulator</h2>
+
+      <div class="card">
+        <p>Test hypothetical changes to see how they affect your admission odds. Adjust variables below to see instant feedback.</p>
+      </div>
+
+      <!-- Current Profile Summary -->
+      <div class="card">
+        <h3>Current Profile</h3>
+        <div id="current-profile" style="background: var(--light-mint); padding: 1rem; border-radius: 8px; margin-top: 1rem;"></div>
+      </div>
+
+      <!-- Simulator Controls -->
+      <div class="card">
+        <h3>Test Hypothetical Changes</h3>
+
+        <div class="form-group">
+          <label>GPA</label>
+          <input type="number" id="sim-gpa" step="0.01" min="0" max="5" placeholder="Enter new GPA">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>SAT Score</label>
+            <input type="number" id="sim-sat" min="400" max="1600" placeholder="Enter new SAT">
+          </div>
+          <div class="form-group">
+            <label>ACT Score</label>
+            <input type="number" id="sim-act" min="1" max="36" placeholder="Enter new ACT">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Additional Activities/Internships</label>
+          <textarea id="sim-activities" rows="3" placeholder="List new activities or improvements"></textarea>
+        </div>
+
+        <button class="btn btn-primary" onclick="calculateSimulation()" style="width: 100%; margin-top: 1rem;">
+          Calculate New Odds
+        </button>
+
+        <button class="btn btn-secondary" onclick="resetSimulation()" style="width: 100%; margin-top: 0.5rem;">
+          Reset to Current Profile
+        </button>
+      </div>
+
+      <!-- Results -->
+      <div id="simulation-results"></div>
+
+      <!-- Next Steps -->
+      <div class="card" id="next-steps" style="display: none;">
+        <h3>Next Step Planning</h3>
+        <div id="next-steps-content"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2024 Path Pal. Your personalized Pal for your college path.</p>
+    </div>
+  </footer>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    let currentProfile = {};
+    let simulatedProfile = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadCurrentProfile();
+    });
+
+    function loadCurrentProfile() {
+      currentProfile = UserProfile.get();
+      const savedColleges = SavedColleges.get();
+      
+      const container = document.getElementById('current-profile');
+      container.innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+          <div><strong>GPA:</strong> ${currentProfile.gpa || 'Not set'}</div>
+          <div><strong>SAT:</strong> ${currentProfile.sat || 'Not set'}</div>
+          <div><strong>ACT:</strong> ${currentProfile.act || 'Not set'}</div>
+          <div><strong>Grade:</strong> ${currentProfile.grade || 'Not set'}</div>
+        </div>
+        <div><strong>Saved Colleges:</strong> ${savedColleges.length}</div>
+      `;
+
+      // Pre-fill with current values
+      if (currentProfile.gpa) document.getElementById('sim-gpa').value = currentProfile.gpa;
+      if (currentProfile.sat) document.getElementById('sim-sat').value = currentProfile.sat;
+      if (currentProfile.act) document.getElementById('sim-act').value = currentProfile.act;
+    }
+
+    function calculateSimulation() {
+      const savedColleges = SavedColleges.get();
+      if (savedColleges.length === 0) {
+        showNotification('Please save some colleges first to see simulation results.', 'warning');
+        return;
+      }
+
+      // Create simulated profile
+      simulatedProfile = {
+        ...currentProfile,
+        gpa: document.getElementById('sim-gpa').value || currentProfile.gpa,
+        sat: document.getElementById('sim-sat').value || currentProfile.sat,
+        act: document.getElementById('sim-act').value || currentProfile.act,
+        activities: document.getElementById('sim-activities').value || currentProfile.activities
+      };
+
+      // Calculate new odds
+      const container = document.getElementById('simulation-results');
+      container.innerHTML = '<h3 style="color: var(--primary-green); margin: 1rem 0;">Simulation Results</h3>';
+
+      savedColleges.forEach(college => {
+        const currentOdds = calculateAdmissionOdds(currentProfile, college);
+        const newOdds = calculateAdmissionOdds(simulatedProfile, college);
+        const change = newOdds - currentOdds;
+        const category = categorizeSchool(newOdds);
+        
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.marginBottom = '1rem';
+        
+        card.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+            <h4 style="color: var(--primary-green); margin: 0;">${college.name}</h4>
+            <span class="badge badge-${category.category}">${category.label}</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div style="text-align: center; padding: 1rem; background: var(--light-mint); border-radius: 8px;">
+              <div style="font-size: 1.5rem; font-weight: bold; color: var(--text-light);">${currentOdds.toFixed(0)}%</div>
+              <div style="font-size: 0.85rem; color: var(--text-light);">Current</div>
+            </div>
+            <div style="text-align: center; padding: 1rem; background: ${change > 0 ? '#e8f5e9' : change < 0 ? '#ffe5e5' : '#f5f5f5'}; border-radius: 8px;">
+              <div style="font-size: 1.5rem; font-weight: bold; color: ${change > 0 ? '#27ae60' : change < 0 ? '#e74c3c' : '#7f8c8d'};">${newOdds.toFixed(0)}%</div>
+              <div style="font-size: 0.85rem; color: var(--text-light);">New Odds</div>
+            </div>
+          </div>
+          <div style="text-align: center; padding: 0.5rem; background: ${change > 0 ? '#e8f5e9' : change < 0 ? '#ffe5e5' : '#f5f5f5'}; border-radius: 8px; font-weight: bold; color: ${change > 0 ? '#27ae60' : change < 0 ? '#e74c3c' : '#7f8c8d'};">
+            ${change > 0 ? '↑' : change < 0 ? '↓' : '='} ${Math.abs(change).toFixed(1)}% change
+          </div>
+        `;
+        
+        container.appendChild(card);
+      });
+
+      // Show next steps
+      loadNextSteps();
+    }
+
+    function resetSimulation() {
+      simulatedProfile = null;
+      loadCurrentProfile();
+      document.getElementById('sim-activities').value = '';
+      document.getElementById('simulation-results').innerHTML = '';
+      document.getElementById('next-steps').style.display = 'none';
+    }
+
+    async function loadNextSteps() {
+      const container = document.getElementById('next-steps');
+      container.style.display = 'block';
+      
+      const content = document.getElementById('next-steps-content');
+      content.innerHTML = '<p class="loading">Analyzing results...</p>';
+
+      try {
+        const changes = [];
+        if (simulatedProfile.gpa !== currentProfile.gpa) changes.push(`GPA from ${currentProfile.gpa || 'N/A'} to ${simulatedProfile.gpa}`);
+        if (simulatedProfile.sat !== currentProfile.sat) changes.push(`SAT from ${currentProfile.sat || 'N/A'} to ${simulatedProfile.sat}`);
+        if (simulatedProfile.act !== currentProfile.act) changes.push(`ACT from ${currentProfile.act || 'N/A'} to ${simulatedProfile.act}`);
+        if (simulatedProfile.activities) changes.push('added new activities');
+
+        const message = `Based on these changes to my profile: ${changes.join(', ')}, what should I focus on next to maximize my admission chances? Provide 3-5 specific, actionable recommendations.`;
+        
+        const response = await sendChatMessage(message);
+        const steps = response.message.split('\n').filter(line => line.trim());
+        
+        content.innerHTML = '<ul style="list-style: none; padding: 0;">' + 
+          steps.map(step => `<li style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-color);">• ${step.trim().replace(/^[-•]\s*/, '')}</li>`).join('') + 
+          '</ul>';
+      } catch (error) {
+        content.innerHTML = '<p style="color: var(--text-light);">Unable to load next steps at this time.</p>';
+      }
+    }
+  </script>
+</body>
+</html>
+

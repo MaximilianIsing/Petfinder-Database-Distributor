@@ -1,51 +1,153 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Pathpal Progressive Web App">
-    <meta name="theme-color" content="#000000">
-    <title>Pathpal</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/jpeg" sizes="192x192" href="icon-192.jpg">
-    <link rel="apple-touch-icon" href="icon-192.jpg">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        h1 {
-            font-size: 3rem;
-            text-align: center;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Your personalized Pal for your college path.">
+  <title>Path Pal - Home</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/style.css">
+  <meta name="theme-color" content="#0d8c79">
 </head>
 <body>
-    <h1>hello</h1>
-    <script>
-        // Register service worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('service-worker.js')
-                    .then(registration => {
-                        console.log('Service Worker registered:', registration);
-                    })
-                    .catch(error => {
-                        console.log('Service Worker registration failed:', error);
-                    });
-            });
-        }
-    </script>
+  <!-- Desktop Message -->
+  <div class="desktop-message">
+    <h1>📱 Mobile App Required</h1>
+    <p>Path Pal is designed for mobile devices. Please open this site on your mobile phone or tablet to get started.</p>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div class="header-content container">
+      <div class="logo">
+        <img src="/media/logo/logo64x64.png" alt="Path Pal Logo">
+        <h1>Path Pal</h1>
+      </div>
+      <button class="menu-toggle" aria-label="Toggle menu">☰</button>
+    </div>
+  </header>
+
+  <!-- Navigation -->
+  <nav>
+    <ul>
+      <li><a href="/index.html" class="active">Home</a></li>
+      <li><a href="/profile.html">My Profile</a></li>
+      <li><a href="/odds.html">Admissions Odds</a></li>
+      <li><a href="/simulator.html">"What If" Simulator</a></li>
+      <li><a href="/explorer.html">College Explorer</a></li>
+      <li><a href="/career.html">Career & Salary Paths</a></li>
+      <li><a href="/activities.html">Activity & Internship Recs</a></li>
+      <li><a href="/planner.html">4-Year Planner</a></li>
+      <li><a href="/messages.html">Messages</a></li>
+      <li><a href="/saved.html">Saved Colleges</a></li>
+    </ul>
+  </nav>
+
+  <!-- Main Content -->
+  <main>
+    <div class="container">
+      <!-- Welcome Banner -->
+      <section class="welcome-banner">
+        <h2>Welcome to Path Pal!</h2>
+        <p>Your personalized Pal for your college path.</p>
+        <button class="btn-primary" onclick="window.location.href='/profile.html'">Start Your Journey</button>
+      </section>
+
+      <!-- Progress Snapshot -->
+      <section class="progress-snapshot">
+        <h3>Your Progress</h3>
+        <div class="progress-item">
+          <span>Profile Completion</span>
+          <span id="profile-completion">0%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="profile-progress" style="width: 0%"></div>
+        </div>
+        <div class="progress-item">
+          <span>Upcoming Deadlines</span>
+          <span id="deadline-count">0</span>
+        </div>
+        <div class="progress-item">
+          <span>Saved Colleges</span>
+          <span id="saved-count">0</span>
+        </div>
+      </section>
+
+      <!-- Quick Access Tiles -->
+      <section class="quick-access">
+        <a href="/odds.html" class="tile">
+          <div class="tile-icon">📊</div>
+          <h3>Check Your Odds</h3>
+          <p>See admission chances</p>
+        </a>
+        <a href="/explorer.html" class="tile">
+          <div class="tile-icon">🔍</div>
+          <h3>Explore Colleges</h3>
+          <p>Find perfect fit</p>
+        </a>
+        <a href="/planner.html" class="tile">
+          <div class="tile-icon">📅</div>
+          <h3>Plan Your Path</h3>
+          <p>4-year roadmap</p>
+        </a>
+        <a href="/messages.html" class="tile">
+          <div class="tile-icon">💬</div>
+          <h3>AI Chat Advisor</h3>
+          <p>Get instant guidance</p>
+        </a>
+        <a href="/profile.html" class="tile">
+          <div class="tile-icon">👤</div>
+          <h3>My Profile</h3>
+          <p>View & update info</p>
+        </a>
+        <a href="/saved.html" class="tile">
+          <div class="tile-icon">⭐</div>
+          <h3>Saved Colleges</h3>
+          <p>Track favorites</p>
+        </a>
+      </section>
+
+      <!-- Notifications -->
+      <section class="notifications">
+        <div class="notification">
+          <h4>New Recommendations Available</h4>
+          <p>Check out personalized activity suggestions based on your profile.</p>
+          <a href="/activities.html" style="color: var(--primary-green);">View Now →</a>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>&copy; 2024 Path Pal. Your personalized Pal for your college path.</p>
+    </div>
+  </footer>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    // Load progress data
+    document.addEventListener('DOMContentLoaded', () => {
+      const profile = UserProfile.get();
+      const savedColleges = SavedColleges.get();
+      
+      // Calculate profile completion
+      let completion = 0;
+      if (profile.name) completion += 15;
+      if (profile.grade) completion += 10;
+      if (profile.gpa) completion += 15;
+      if (profile.sat || profile.act) completion += 15;
+      if (profile.majors && profile.majors.length > 0) completion += 15;
+      if (profile.activities && profile.activities.length > 0) completion += 15;
+      if (profile.careerGoals) completion += 15;
+      
+      document.getElementById('profile-completion').textContent = completion + '%';
+      document.getElementById('profile-progress').style.width = completion + '%';
+      document.getElementById('saved-count').textContent = savedColleges.length;
+    });
+  </script>
 </body>
 </html>
 

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Activity & Internship Recommendations - Path Pal">
+  <title>Activity & Internship Recs - Path Pal</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/style.css">
+  <meta name="theme-color" content="#0d8c79">
+</head>
+<body>
+  <div class="desktop-message">
+    <h1>📱 Mobile App Required</h1>
+    <p>Path Pal is designed for mobile devices. Please open this site on your mobile phone or tablet.</p>
+  </div>
+
+  <header>
+    <div class="header-content container">
+      <div class="logo">
+        <img src="/media/logo/logo64x64.png" alt="Path Pal Logo">
+        <h1>Path Pal</h1>
+      </div>
+      <button class="menu-toggle" aria-label="Toggle menu">☰</button>
+    </div>
+  </header>
+
+  <nav>
+    <ul>
+      <li><a href="/index.html">Home</a></li>
+      <li><a href="/profile.html">My Profile</a></li>
+      <li><a href="/odds.html">Admissions Odds</a></li>
+      <li><a href="/simulator.html">"What If" Simulator</a></li>
+      <li><a href="/explorer.html">College Explorer</a></li>
+      <li><a href="/career.html">Career & Salary Paths</a></li>
+      <li><a href="/activities.html" class="active">Activity & Internship Recs</a></li>
+      <li><a href="/planner.html">4-Year Planner</a></li>
+      <li><a href="/messages.html">Messages</a></li>
+      <li><a href="/saved.html">Saved Colleges</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <div class="container">
+      <h2 style="color: var(--primary-green); margin: 1rem 0;">Activity & Internship Recommendations</h2>
+
+      <!-- Filters -->
+      <div class="filters">
+        <h3 style="color: var(--primary-green); margin-bottom: 1rem;">Filter by Category</h3>
+        <div class="filters-grid">
+          <button class="btn filter-btn active" data-category="all" onclick="filterActivities('all')">
+            All
+          </button>
+          <button class="btn filter-btn" data-category="academic" onclick="filterActivities('academic')">
+            Academic
+          </button>
+          <button class="btn filter-btn" data-category="leadership" onclick="filterActivities('leadership')">
+            Leadership
+          </button>
+          <button class="btn filter-btn" data-category="community" onclick="filterActivities('community')">
+            Community Service
+          </button>
+          <button class="btn filter-btn" data-category="career" onclick="filterActivities('career')">
+            Career-Focused
+          </button>
+          <button class="btn filter-btn" data-category="internship" onclick="filterActivities('internship')">
+            Internships
+          </button>
+        </div>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="card">
+        <h3>Personalized Recommendations</h3>
+        <p>Based on your profile and goals, here are activities and internships that can strengthen your college application.</p>
+        <button class="btn btn-secondary" onclick="loadRecommendations()" style="width: 100%; margin-top: 1rem;">
+          Get New Recommendations
+        </button>
+      </div>
+
+      <!-- Activity List -->
+      <div id="activities-list"></div>
+
+      <!-- Saved Activities -->
+      <div class="card" id="saved-activities" style="display: none;">
+        <h3>Saved Activities</h3>
+        <div id="saved-list"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2024 Path Pal. Your personalized Pal for your college path.</p>
+    </div>
+  </footer>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    let allActivities = [];
+    let currentFilter = 'all';
+
+    const defaultActivities = [
+      { id: 1, title: 'Math Olympiad Club', category: 'academic', description: 'Competitive math problem-solving team', platform: 'School-based' },
+      { id: 2, title: 'Student Government', category: 'leadership', description: 'Elected position representing student body', platform: 'School-based' },
+      { id: 3, title: 'Community Food Drive', category: 'community', description: 'Organize and run food donation drives', platform: 'Local Non-profit' },
+      { id: 4, title: 'Summer Coding Bootcamp', category: 'academic', description: 'Intensive programming course', platform: 'Online/Local' },
+      { id: 5, title: 'Tech Company Internship', category: 'internship', description: 'Software development internship', platform: 'Handshake' },
+      { id: 6, title: 'Volunteer Tutoring', category: 'community', description: 'Tutor underprivileged students', platform: 'Local Organization' },
+      { id: 7, title: 'Business Pitch Competition', category: 'career', description: 'Develop and pitch business ideas', platform: 'Competition' },
+      { id: 8, title: 'Science Research Project', category: 'academic', description: 'Independent research with mentor', platform: 'University Program' }
+    ];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadRecommendations();
+      loadSavedActivities();
+    });
+
+    async function loadRecommendations() {
+      const profile = UserProfile.get();
+      const container = document.getElementById('activities-list');
+
+      try {
+        // Get AI recommendations
+        const message = `Based on my profile (Grade: ${profile.grade || 'not set'}, Majors: ${(profile.majors || []).join(', ') || 'not specified'}, Career Goals: ${profile.careerGoals || 'not specified'}), suggest 5-7 specific extracurricular activities, clubs, volunteer opportunities, or internships that would strengthen my college application. Format as a numbered list with brief descriptions.`;
+        
+        const response = await sendChatMessage(message);
+        const recommendations = response.message.split('\n').filter(line => line.trim() && /^\d+[.)]/.test(line.trim()));
+        
+        // Combine with default activities
+        allActivities = [...defaultActivities, ...recommendations.map((rec, idx) => ({
+          id: defaultActivities.length + idx + 1,
+          title: rec.replace(/^\d+[.)]\s*/, '').split(':')[0].trim(),
+          description: rec.split(':').slice(1).join(':').trim() || 'Personalized recommendation based on your profile',
+          category: 'career',
+          platform: 'AI Recommended'
+        }))];
+
+        displayActivities(allActivities);
+      } catch (error) {
+        // Fallback to default activities
+        allActivities = defaultActivities;
+        displayActivities(allActivities);
+      }
+    }
+
+    function displayActivities(activities) {
+      const container = document.getElementById('activities-list');
+      const filtered = currentFilter === 'all' ? activities : activities.filter(a => a.category === currentFilter);
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="card"><p>No activities match your filter. Try a different category.</p></div>';
+        return;
+      }
+
+      container.innerHTML = '<h3 style="color: var(--primary-green); margin: 1rem 0;">Recommended Activities</h3>';
+
+      filtered.forEach(activity => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.marginBottom = '1rem';
+        
+        const isSaved = isActivitySaved(activity.id);
+        const categoryLabels = {
+          academic: 'Academic',
+          leadership: 'Leadership',
+          community: 'Community Service',
+          career: 'Career-Focused',
+          internship: 'Internship'
+        };
+        
+        card.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+            <div style="flex: 1;">
+              <h4 style="color: var(--primary-green); margin-bottom: 0.5rem;">${activity.title}</h4>
+              <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 0.5rem;">${activity.description || 'No description available'}</p>
+              <span class="badge badge-target" style="background: var(--light-mint); color: var(--primary-green);">
+                ${categoryLabels[activity.category] || activity.category}
+              </span>
+              <span style="color: var(--text-light); font-size: 0.85rem; margin-left: 0.5rem;">• ${activity.platform || 'Various'}</span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-primary" onclick="saveActivity(${activity.id})" style="flex: 1; ${isSaved ? 'background: var(--success);' : ''}">
+              ${isSaved ? '✓ Saved' : '⭐ Save'}
+            </button>
+            <button class="btn btn-secondary" onclick="addToPlanner(${activity.id})" style="flex: 1;">
+              📅 Add to Planner
+            </button>
+          </div>
+        `;
+        
+        container.appendChild(card);
+      });
+    }
+
+    function filterActivities(category) {
+      currentFilter = category;
+      
+      // Update active button
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.category === category) {
+          btn.classList.add('active');
+        }
+      });
+      
+      displayActivities(allActivities);
+    }
+
+    function saveActivity(activityId) {
+      const activity = allActivities.find(a => a.id === activityId);
+      if (!activity) return;
+
+      const saved = Storage.get('savedActivities', []);
+      if (!saved.find(a => a.id === activityId)) {
+        saved.push({ ...activity, savedAt: new Date().toISOString() });
+        Storage.set('savedActivities', saved);
+        showNotification(`${activity.title} saved!`, 'success');
+        loadSavedActivities();
+      } else {
+        const filtered = saved.filter(a => a.id !== activityId);
+        Storage.set('savedActivities', filtered);
+        showNotification(`${activity.title} removed from saved`, 'info');
+        loadSavedActivities();
+      }
+      
+      displayActivities(allActivities);
+    }
+
+    function isActivitySaved(activityId) {
+      const saved = Storage.get('savedActivities', []);
+      return saved.some(a => a.id === activityId);
+    }
+
+    function addToPlanner(activityId) {
+      const activity = allActivities.find(a => a.id === activityId);
+      if (activity) {
+        const plannerItems = Storage.get('plannerItems', []);
+        plannerItems.push({ ...activity, addedAt: new Date().toISOString() });
+        Storage.set('plannerItems', plannerItems);
+        showNotification(`${activity.title} added to 4-Year Planner!`, 'success');
+        setTimeout(() => {
+          if (confirm('View your 4-Year Planner?')) {
+            window.location.href = '/planner.html';
+          }
+        }, 500);
+      }
+    }
+
+    function loadSavedActivities() {
+      const saved = Storage.get('savedActivities', []);
+      const container = document.getElementById('saved-activities');
+      const listContainer = document.getElementById('saved-list');
+
+      if (saved.length === 0) {
+        container.style.display = 'none';
+        return;
+      }
+
+      container.style.display = 'block';
+      listContainer.innerHTML = saved.map(activity => `
+        <div style="background: var(--light-mint); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid var(--primary-green);">
+          <h4 style="color: var(--primary-green); margin-bottom: 0.5rem;">${activity.title}</h4>
+          <p style="color: var(--text-light); font-size: 0.9rem;">${activity.description || 'No description'}</p>
+          <button class="btn btn-secondary" onclick="removeSavedActivity(${activity.id})" style="margin-top: 0.5rem; padding: 0.5rem 1rem; font-size: 0.85rem;">
+            Remove
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function removeSavedActivity(activityId) {
+      const saved = Storage.get('savedActivities', []).filter(a => a.id !== activityId);
+      Storage.set('savedActivities', saved);
+      loadSavedActivities();
+      displayActivities(allActivities);
+    }
+  </script>
+</body>
+</html>
+

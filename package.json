@@ -1,12 +1,23 @@
 {
-  "name": "pathpal",
+  "name": "path-pal",
   "version": "1.0.0",
-  "description": "Pathpal Progressive Web App",
+  "description": "Your personalized Pal for your college path.",
+  "main": "server.js",
   "scripts": {
-    "start": "npx serve -s . -l 10000"
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["pwa", "college", "planning", "education"],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   },
   "dependencies": {
-    "serve": "^14.2.1"
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
   }
 }
 

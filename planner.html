@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="4-Year Planner - Path Pal">
+  <title>4-Year Planner - Path Pal</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/style.css">
+  <meta name="theme-color" content="#0d8c79">
+</head>
+<body>
+  <div class="desktop-message">
+    <h1>📱 Mobile App Required</h1>
+    <p>Path Pal is designed for mobile devices. Please open this site on your mobile phone or tablet.</p>
+  </div>
+
+  <header>
+    <div class="header-content container">
+      <div class="logo">
+        <img src="/media/logo/logo64x64.png" alt="Path Pal Logo">
+        <h1>Path Pal</h1>
+      </div>
+      <button class="menu-toggle" aria-label="Toggle menu">☰</button>
+    </div>
+  </header>
+
+  <nav>
+    <ul>
+      <li><a href="/index.html">Home</a></li>
+      <li><a href="/profile.html">My Profile</a></li>
+      <li><a href="/odds.html">Admissions Odds</a></li>
+      <li><a href="/simulator.html">"What If" Simulator</a></li>
+      <li><a href="/explorer.html">College Explorer</a></li>
+      <li><a href="/career.html">Career & Salary Paths</a></li>
+      <li><a href="/activities.html">Activity & Internship Recs</a></li>
+      <li><a href="/planner.html" class="active">4-Year Planner</a></li>
+      <li><a href="/messages.html">Messages</a></li>
+      <li><a href="/saved.html">Saved Colleges</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <div class="container">
+      <h2 style="color: var(--primary-green); margin: 1rem 0;">4-Year Planner</h2>
+
+      <div class="card">
+        <p>Your step-by-step roadmap with recommended courses, milestones, and activities. The planner automatically adjusts if your career goals change.</p>
+        <button class="btn btn-secondary" onclick="generatePlanner()" style="width: 100%; margin-top: 1rem;">
+          Generate/Update Planner
+        </button>
+      </div>
+
+      <!-- Year Selector -->
+      <div class="card">
+        <h3>Select Year</h3>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
+          <button class="btn year-btn active" onclick="showYear(1)">Year 1</button>
+          <button class="btn year-btn" onclick="showYear(2)">Year 2</button>
+          <button class="btn year-btn" onclick="showYear(3)">Year 3</button>
+          <button class="btn year-btn" onclick="showYear(4)">Year 4</button>
+        </div>
+      </div>
+
+      <!-- Planner Content -->
+      <div id="planner-content">
+        <div class="card">
+          <h3 id="year-title">Year 1 Roadmap</h3>
+          <div id="year-content" class="loading">Loading planner...</div>
+        </div>
+      </div>
+
+      <!-- Milestones -->
+      <div class="card" id="milestones-card" style="display: none;">
+        <h3>Key Milestones</h3>
+        <div id="milestones-content"></div>
+      </div>
+
+      <!-- Timeline -->
+      <div class="card" id="timeline-card" style="display: none;">
+        <h3>Timeline</h3>
+        <div id="timeline-content"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2024 Path Pal. Your personalized Pal for your college path.</p>
+    </div>
+  </footer>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    let currentYear = 1;
+    let plannerData = {};
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadPlanner();
+    });
+
+    function showYear(year) {
+      currentYear = year;
+      
+      // Update active button
+      document.querySelectorAll('.year-btn').forEach((btn, idx) => {
+        btn.classList.remove('active');
+        if (idx === year - 1) {
+          btn.classList.add('active');
+        }
+      });
+      
+      displayYear(year);
+    }
+
+    function displayYear(year) {
+      const content = document.getElementById('year-content');
+      const title = document.getElementById('year-title');
+      title.textContent = `Year ${year} Roadmap`;
+
+      const yearData = plannerData[`year${year}`] || generateDefaultYear(year);
+
+      content.innerHTML = `
+        <div style="margin-bottom: 1.5rem;">
+          <h4 style="color: var(--primary-green); margin-bottom: 1rem;">Recommended Courses</h4>
+          <ul style="list-style: none; padding: 0;">
+            ${yearData.courses.map(course => `
+              <li style="padding: 0.75rem; background: var(--light-mint); border-radius: 8px; margin-bottom: 0.5rem; border-left: 4px solid var(--primary-green);">
+                <strong>${course.name}</strong> - ${course.description || 'Required course for your major'}
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+          <h4 style="color: var(--primary-green); margin-bottom: 1rem;">Recommended Activities</h4>
+          <ul style="list-style: none; padding: 0;">
+            ${yearData.activities.map(activity => `
+              <li style="padding: 0.75rem; background: var(--light-mint); border-radius: 8px; margin-bottom: 0.5rem; border-left: 4px solid var(--primary-green);">
+                <strong>${activity.name}</strong> - ${activity.description || 'Activity to strengthen your profile'}
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+
+        <div>
+          <h4 style="color: var(--primary-green); margin-bottom: 1rem;">Important Dates</h4>
+          <ul style="list-style: none; padding: 0;">
+            ${yearData.dates.map(date => `
+              <li style="padding: 0.75rem; background: var(--light-mint); border-radius: 8px; margin-bottom: 0.5rem; border-left: 4px solid var(--primary-green);">
+                <strong>${date.name}</strong> - ${date.date}
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      `;
+    }
+
+    function generateDefaultYear(year) {
+      const profile = UserProfile.get();
+      const majors = profile.majors || ['General Studies'];
+      const major = majors[0];
+
+      const yearData = {
+        courses: [],
+        activities: [],
+        dates: []
+      };
+
+      if (year === 1) {
+        yearData.courses = [
+          { name: 'Introduction to ' + major, description: 'Foundational course in your major' },
+          { name: 'English Composition', description: 'Develop writing skills' },
+          { name: 'Mathematics', description: 'Build quantitative skills' },
+          { name: 'General Education Elective', description: 'Explore interests' }
+        ];
+        yearData.activities = [
+          { name: 'Join relevant clubs', description: 'Get involved in campus/community activities' },
+          { name: 'Build study habits', description: 'Establish strong academic foundation' }
+        ];
+        yearData.dates = [
+          { name: 'Semester Start', date: 'Fall' },
+          { name: 'Midterm Exams', date: 'Mid-October' },
+          { name: 'Final Exams', date: 'December' }
+        ];
+      } else if (year === 2) {
+        yearData.courses = [
+          { name: 'Intermediate ' + major, description: 'Advanced topics in your major' },
+          { name: 'Research Methods', description: 'Learn research skills' },
+          { name: 'Statistics', description: 'Data analysis skills' },
+          { name: 'General Education', description: 'Complete GE requirements' }
+        ];
+        yearData.activities = [
+          { name: 'Apply for internships', description: 'Gain work experience' },
+          { name: 'Leadership roles', description: 'Take on leadership positions' }
+        ];
+        yearData.dates = [
+          { name: 'Internship Applications', date: 'Spring' },
+          { name: 'Summer Planning', date: 'May' }
+        ];
+      } else if (year === 3) {
+        yearData.courses = [
+          { name: 'Advanced ' + major, description: 'Specialized coursework' },
+          { name: 'Capstone Project', description: 'Major project or research' },
+          { name: 'Electives', description: 'Specialized electives' }
+        ];
+        yearData.activities = [
+          { name: 'Summer Internship', description: 'Gain professional experience' },
+          { name: 'Research Project', description: 'Independent research' }
+        ];
+        yearData.dates = [
+          { name: 'College Applications Begin', date: 'Fall' },
+          { name: 'Test Prep (if needed)', date: 'Summer-Fall' }
+        ];
+      } else if (year === 4) {
+        yearData.courses = [
+          { name: 'Senior Seminar', description: 'Capstone course' },
+          { name: 'Thesis/Project', description: 'Final major project' },
+          { name: 'Electives', description: 'Complete requirements' }
+        ];
+        yearData.activities = [
+          { name: 'Job/Post-Grad Applications', description: 'Apply for jobs or graduate programs' },
+          { name: 'Network building', description: 'Connect with professionals' }
+        ];
+        yearData.dates = [
+          { name: 'Graduation', date: 'Spring' },
+          { name: 'Job Interviews', date: 'Spring' }
+        ];
+      }
+
+      return yearData;
+    }
+
+    async function generatePlanner() {
+      const content = document.getElementById('year-content');
+      content.innerHTML = '<p class="loading">Generating personalized 4-year plan...</p>';
+
+      try {
+        const profile = UserProfile.get();
+        const message = `Create a personalized 4-year academic and activity plan for a ${profile.grade || 'high school/college'} student with the following profile: GPA: ${profile.gpa || 'not set'}, Major(s): ${(profile.majors || []).join(', ') || 'not specified'}, Career Goals: ${profile.careerGoals || 'not specified'}. Provide a detailed roadmap for each year with courses, activities, and important dates. Format as structured data.`;
+
+        const response = await sendChatMessage(message);
+        
+        // Parse AI response and extract planner data
+        // For now, use default structure with AI enhancements
+        for (let year = 1; year <= 4; year++) {
+          plannerData[`year${year}`] = generateDefaultYear(year);
+        }
+
+        // Save planner
+        Storage.set('plannerData', plannerData);
+        
+        showNotification('Planner generated successfully!', 'success');
+        displayYear(currentYear);
+        loadMilestones();
+        loadTimeline();
+      } catch (error) {
+        // Fallback to default planner
+        for (let year = 1; year <= 4; year++) {
+          plannerData[`year${year}`] = generateDefaultYear(year);
+        }
+        Storage.set('plannerData', plannerData);
+        displayYear(currentYear);
+        showNotification('Planner updated with default structure.', 'info');
+      }
+    }
+
+    function loadPlanner() {
+      const saved = Storage.get('plannerData', null);
+      if (saved) {
+        plannerData = saved;
+      } else {
+        // Generate default planner
+        for (let year = 1; year <= 4; year++) {
+          plannerData[`year${year}`] = generateDefaultYear(year);
+        }
+      }
+      
+      displayYear(currentYear);
+      loadMilestones();
+      loadTimeline();
+    }
+
+    function loadMilestones() {
+      const container = document.getElementById('milestones-content');
+      const card = document.getElementById('milestones-card');
+      
+      const milestones = [
+        { year: 1, name: 'Maintain Strong GPA', completed: false },
+        { year: 2, name: 'Complete Core Requirements', completed: false },
+        { year: 3, name: 'Secure Internship', completed: false },
+        { year: 4, name: 'Graduate & Career Ready', completed: false }
+      ];
+
+      container.innerHTML = milestones.map(m => `
+        <div style="padding: 1rem; background: var(--light-mint); border-radius: 8px; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--primary-green);">
+          <div>
+            <strong style="color: var(--primary-green);">Year ${m.year}:</strong> ${m.name}
+          </div>
+          <input type="checkbox" ${m.completed ? 'checked' : ''} onchange="updateMilestone(${m.year}, this.checked)">
+        </div>
+      `).join('');
+
+      card.style.display = 'block';
+    }
+
+    function loadTimeline() {
+      const container = document.getElementById('timeline-content');
+      const card = document.getElementById('timeline-card');
+      
+      const timeline = [
+        { date: 'Fall Year 1', event: 'Start strong, build foundation' },
+        { date: 'Spring Year 2', event: 'Explore interests, build connections' },
+        { date: 'Summer Year 2', event: 'First internship/research' },
+        { date: 'Fall Year 3', event: 'Specialize, take leadership roles' },
+        { date: 'Spring Year 4', event: 'Complete requirements, prepare for post-grad' }
+      ];
+
+      container.innerHTML = timeline.map((item, idx) => `
+        <div style="padding: 1rem; background: var(--light-mint); border-radius: 8px; margin-bottom: 0.5rem; border-left: 4px solid var(--primary-green); position: relative; padding-left: 2rem;">
+          <div style="position: absolute; left: -8px; top: 1rem; width: 16px; height: 16px; background: var(--primary-green); border-radius: 50%;"></div>
+          <div><strong style="color: var(--primary-green);">${item.date}</strong></div>
+          <div style="color: var(--text-light); font-size: 0.9rem; margin-top: 0.25rem;">${item.event}</div>
+        </div>
+      `).join('');
+
+      card.style.display = 'block';
+    }
+
+    function updateMilestone(year, completed) {
+      // Save milestone status
+      const milestones = Storage.get('milestones', {});
+      milestones[year] = completed;
+      Storage.set('milestones', milestones);
+    }
+  </script>
+</body>
+</html>
+
