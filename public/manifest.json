@@ -1,7 +1,7 @@
 {
   "name": "Path Pal",
   "short_name": "Path Pal",
-  "description": "v1.04",
+  "description": "v1.05",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

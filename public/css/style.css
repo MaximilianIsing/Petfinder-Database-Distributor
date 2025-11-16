@@ -112,14 +112,14 @@ body {
 .desktop-message-content {
   background: var(--white);
   border-radius: 24px;
-  padding: 3rem 2.5rem;
+  padding: 2.5rem 2.25rem;
   max-width: 550px;
   width: 100%;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1.25rem;
   font-family: 'Arvo', serif;
 }
 
@@ -138,6 +138,8 @@ body {
 .desktop-message-icon img {
   width: 80px;
   height: 80px;
+  animation: floatPhone 5s ease-in-out infinite;
+  transform-origin: center center;
 }
 
 .desktop-message-logo {
@@ -161,6 +163,27 @@ body {
   font-family: 'Arvo', serif;
 }
 
+@keyframes floatPhone {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  20% {
+    transform: translate(4px, -3px) rotate(2deg);
+  }
+  40% {
+    transform: translate(6px, 2px) rotate(4deg);
+  }
+  60% {
+    transform: translate(-3px, 4px) rotate(-2deg);
+  }
+  80% {
+    transform: translate(-5px, -1px) rotate(-4deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+}
+
 .desktop-message h2 {
   color: var(--primary-green);
   margin: 0;
@@ -179,8 +202,8 @@ body {
 }
 
 .desktop-message-actions {
-  margin-top: 1rem;
-  padding-top: 1.5rem;
+  margin-top: 0.75rem;
+  padding-top: 1rem;
   border-top: 2px solid var(--light-mint);
   width: 100%;
   font-family: 'Arvo', serif;
@@ -190,7 +213,7 @@ body {
   color: var(--text-dark);
   font-size: 1rem;
   font-weight: bold;
-  margin: 0 0 1rem 0;
+  margin: 0 0 0.75rem 0;
   font-family: 'Arvo', serif;
 }
 
@@ -205,24 +228,31 @@ body {
 }
 
 .desktop-steps li {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.35rem;
   font-family: 'Arvo', serif;
 }
 
 .desktop-qr {
-  margin-top: 1rem;
+  margin-top: 0.5rem;
   display: flex;
   justify-content: center;
 }
 
 .desktop-qr img {
-  width: 160px;
-  height: 160px;
+  width: 192px;
+  height: 192px;
   border-radius: 12px;
   background: var(--white);
   padding: 0.75rem;
   border: 2px solid rgba(13, 140, 121, 0.3);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.desktop-qr img:hover {
+  transform: translateY(-4px) scale(1.03);
+  border-color: rgba(13, 140, 121, 0.6);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
 }
 
 .desktop-footer-bar {
