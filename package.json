@@ -1,7 +1,7 @@
 {
   "name": "path-pal",
   "version": "1.0.0",
-  "description": "v1.09",
+  "description": "v1.09.1",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
