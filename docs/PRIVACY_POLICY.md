@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last Updated: January 2025**
+**Last Updated: November 2025**
 
 ## Introduction
 
@@ -170,10 +170,6 @@ If you are a California resident, you have additional rights under the Californi
 If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us at:
 
 **Email**: Team@pathpal.us
-
-**Address**: 
-Path Pal
-[Your Business Address]
 
 ## Consent
 
