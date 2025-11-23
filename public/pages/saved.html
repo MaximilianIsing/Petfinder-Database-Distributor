@@ -39,6 +39,8 @@
       <li><a href="/planner.html"><img src="/media/icons/Calender256x256.png" alt="4-Year Planner" class="nav-icon"> 4-Year Planner</a></li>
       <li><a href="/messages.html"><img src="/media/icons/Chat256x256.png" alt="AI Counselor" class="nav-icon"> AI Counselor</a></li>
       <li><a href="/saved.html" class="active"><img src="/media/icons/Star256x256.png" alt="Saved Colleges" class="nav-icon"> Saved Colleges</a></li>
+      <li><a href="#" onclick="handleSignOut(); return false;"><img src="/media/icons/SignOut256x256.png" alt="Sign Out" class="nav-icon"> Sign Out</a></li>
+      <li><a href="https://forms.gle/ULMYUSDifpanJ9KMA" target="_blank"><img src="/media/icons/Feedback256x256.png" alt="Feedback" class="nav-icon"> Feedback</a></li>
     </ul>
   </nav>
 
@@ -68,7 +70,7 @@
 
   <footer>
     <div class="container">
-      <p>&copy; 2025 Path Pal. v1.07</p>
+      <p>&copy; 2025 Path Pal. v1.08</p>
     </div>
   </footer>
 
@@ -76,10 +78,11 @@
   <script src="/js/app.js"></script>
   <script>
     // Client-side implementation of getAdmissionOdds (from rate-system.js)
-    function getAdmissionOdds(studentScore, collegeScore) {
+    function getAdmissionOdds(studentScore, collegeScore, acceptanceRate) {
       // Parse inputs
       const student = typeof studentScore === 'string' ? parseFloat(studentScore) : (studentScore || 0);
       const college = typeof collegeScore === 'string' ? parseFloat(collegeScore) : (collegeScore || 0);
+      const acceptance = typeof acceptanceRate === 'string' ? parseFloat(acceptanceRate) : (acceptanceRate || null);
 
       // Ensure scores are in valid range
       const studentNorm = Math.max(0, Math.min(100, student));
@@ -88,20 +91,67 @@
       // Calculate delta (difference)
       const delta = studentNorm - collegeNorm;
 
-      // Base odds when scores are equal
-      const baseOdds = 50; // 50% when student matches college
+      // Base odds when scores are equal - start from the college's acceptance rate if available
+      // If no acceptance rate, default to 50%
+      let baseOdds = 50;
+      if (acceptance !== null && acceptance >= 0 && acceptance <= 1) {
+        // Use acceptance rate as base, but adjust based on score delta
+        // For example: 15% acceptance rate college = base odds of 15% when student matches college
+        baseOdds = acceptance * 100;
+      }
 
+      // Calculate odds based on delta
+      // Positive delta (student > college) = higher odds
+      // Negative delta (student < college) = lower odds
+      
       // Use a sigmoid-like curve for smooth transitions
       const deltaMultiplier = 1.5; // Each point of delta = 1.5% change
-      
+      let odds = baseOdds + (delta * deltaMultiplier);
+
       // Apply sigmoid-like curve for more realistic distribution
+      // This makes extreme differences less impactful
       const sigmoidFactor = 0.8; // Smoothing factor
       const normalizedDelta = delta / 50; // Normalize to -1 to 1 range
       const sigmoidDelta = (normalizedDelta / (1 + Math.abs(normalizedDelta) * sigmoidFactor)) * 50;
-      let odds = baseOdds + (sigmoidDelta * deltaMultiplier);
+      odds = baseOdds + (sigmoidDelta * deltaMultiplier);
 
-      // Clamp to reasonable bounds (3% to 97%)
-      odds = Math.max(3, Math.min(97, odds));
+      // If acceptance rate is provided, use it as a constraint
+      // The odds should not exceed the acceptance rate by too much, and should scale with it
+      if (acceptance !== null && acceptance >= 0 && acceptance <= 1) {
+        const acceptancePercent = acceptance * 100;
+        
+        // Scale the odds relative to the acceptance rate
+        // If baseOdds was set from acceptance rate, we've already accounted for it
+        // But we should ensure odds don't go too far above/below the acceptance rate based on delta alone
+        
+        // For highly selective schools (low acceptance), limit how high odds can go
+        if (acceptancePercent < 20) {
+          // Very selective: odds can go up to 2.5x the acceptance rate for strong students
+          const maxOdds = Math.min(acceptancePercent * 2.5, 95);
+          odds = Math.min(odds, maxOdds);
+        } else if (acceptancePercent < 50) {
+          // Moderately selective: odds can go up to 1.8x the acceptance rate
+          const maxOdds = Math.min(acceptancePercent * 1.8, 95);
+          odds = Math.min(odds, maxOdds);
+        } else {
+          // Less selective: odds can go higher, but still cap at reasonable level
+          const maxOdds = Math.min(acceptancePercent * 1.5, 95);
+          odds = Math.min(odds, maxOdds);
+        }
+        
+        // Ensure odds don't go below a minimum based on acceptance rate
+        // Even weak students have some chance at less selective schools
+        if (acceptancePercent > 50) {
+          const minOdds = Math.max(acceptancePercent * 0.3, 5);
+          odds = Math.max(odds, minOdds);
+        } else {
+          const minOdds = Math.max(acceptancePercent * 0.2, 2);
+          odds = Math.max(odds, minOdds);
+        }
+      }
+
+      // Clamp to reasonable bounds (2% to 98%)
+      odds = Math.max(2, Math.min(98, odds));
 
       // Round to nearest integer
       return Math.round(odds);
@@ -150,7 +200,7 @@
         let odds;
         let oddsDisplay;
         if (studentRating !== null && studentRating !== undefined && college.rating !== null && college.rating !== undefined) {
-          odds = getAdmissionOdds(studentRating, college.rating);
+          odds = getAdmissionOdds(studentRating, college.rating, college.acceptanceRate);
           oddsDisplay = odds + '%';
         } else {
           odds = null;
@@ -299,6 +349,13 @@
 
     // Check updates on load
     setTimeout(checkForUpdates, 2000);
+  </script>
+  <script src="/js/auth.js"></script>
+  <script>
+    function handleSignOut() {
+      signOut();
+      window.location.href = '/pages/login.html';
+    }
   </script>
 </body>
 </html>

@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
+const nodemailer = require('nodemailer');
 const { rateStudent, getAdmissionOdds } = require('./rate-system');
 
 const app = express();
@@ -18,6 +19,95 @@ if (!GPT_API_KEY) {
     GPT_API_KEY = fs.readFileSync(path.join(__dirname, 'gpt-key.txt'), 'utf8').trim();
   } catch (error) {
     console.error('Warning: GPT API key not found in environment or file');
+  }
+}
+
+// Read Email API key from environment variable (for Render) or file (for local dev)
+let EMAIL_API_KEY = process.env.EMAIL_API_KEY || '';
+let EMAIL_SERVICE = process.env.EMAIL_SERVICE || 'resend'; // 'resend', 'sendgrid', or 'mailgun'
+if (!EMAIL_API_KEY) {
+  try {
+    EMAIL_API_KEY = fs.readFileSync(path.join(__dirname, 'email-key.txt'), 'utf8').trim();
+  } catch (error) {
+    console.log('Email API key not found - email functionality will be disabled');
+  }
+}
+
+// Configure email transporter
+let emailTransporter = null;
+if (EMAIL_API_KEY) {
+  // Configure based on service
+  const smtpConfig = {
+    resend: {
+      host: 'smtp.resend.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: 'resend',
+        pass: EMAIL_API_KEY
+      }
+    },
+    sendgrid: {
+      host: 'smtp.sendgrid.net',
+      port: 587,
+      secure: false,
+      auth: {
+        user: 'apikey',
+        pass: EMAIL_API_KEY
+      }
+    },
+    mailgun: {
+      host: 'smtp.mailgun.org',
+      port: 587,
+      secure: false,
+      auth: {
+        user: 'postmaster@your-domain.mailgun.org', // Update with your Mailgun domain
+        pass: EMAIL_API_KEY
+      }
+    }
+  };
+
+  const config = smtpConfig[EMAIL_SERVICE] || smtpConfig.resend;
+  emailTransporter = nodemailer.createTransport(config);
+  
+  // Verify connection
+  emailTransporter.verify((error, success) => {
+    if (error) {
+      console.error('Email transporter verification failed:', error);
+    } else {
+      console.log('✓ Email transporter ready');
+    }
+  });
+}
+
+/**
+ * Send an email
+ * @param {string} to - Recipient email address
+ * @param {string} subject - Email subject
+ * @param {string} html - HTML email content
+ * @param {string} text - Plain text email content (optional)
+ * @returns {Promise<boolean>} - Success status
+ */
+async function sendEmail(to, subject, html, text = null) {
+  if (!emailTransporter) {
+    console.error('Email transporter not configured');
+    return false;
+  }
+
+  try {
+    const info = await emailTransporter.sendMail({
+      from: 'Team@pathpal.us',
+      to: to,
+      subject: subject,
+      html: html,
+      text: text || html.replace(/<[^>]*>/g, '') // Strip HTML for text version
+    });
+
+    console.log('Email sent:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('Error sending email:', error);
+    return false;
   }
 }
 
@@ -93,7 +183,7 @@ htmlPages.forEach(page => {
 
 // Serve index.html for root route
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'pages', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'pages', 'landing.html'));
 });
 
 // CSV file path
@@ -295,6 +385,10 @@ app.get('/api/colleges', async (req, res) => {
 
 // Accounts CSV file path
 const ACCOUNTS_CSV_PATH = path.join(__dirname, 'storage', 'accounts.csv');
+// Logins CSV file path
+const LOGINS_CSV_PATH = path.join(__dirname, 'storage', 'logins.csv');
+// Profile pictures CSV file path
+const PROFILE_PICTURES_CSV_PATH = path.join(__dirname, 'storage', 'profile_pictures.csv');
 
 // Ensure storage directory exists
 const storageDir = path.join(__dirname, 'storage');
@@ -306,6 +400,18 @@ if (!fs.existsSync(storageDir)) {
 if (!fs.existsSync(ACCOUNTS_CSV_PATH)) {
   const header = 'user_id,name,grade,gpa,weighted,sat,act,psat,majors,ap_courses,activities,interests,career_goals,rating,created_at,updated_at\n';
   fs.writeFileSync(ACCOUNTS_CSV_PATH, header, 'utf8');
+}
+
+// Initialize logins CSV if it doesn't exist
+if (!fs.existsSync(LOGINS_CSV_PATH)) {
+  const header = 'email,password_hash,user_id,created_at\n';
+  fs.writeFileSync(LOGINS_CSV_PATH, header, 'utf8');
+}
+
+// Initialize profile pictures CSV if it doesn't exist
+if (!fs.existsSync(PROFILE_PICTURES_CSV_PATH)) {
+  const header = 'user_id,profile_picture_base64,updated_at\n';
+  fs.writeFileSync(PROFILE_PICTURES_CSV_PATH, header, 'utf8');
 }
 
 // Helper function to escape CSV values
@@ -678,9 +784,321 @@ app.get('/api/user-id', (req, res) => {
   res.json({ user_id: userId });
 });
 
+// Authentication endpoints
+
+// Read logins from CSV
+function readLogins() {
+  try {
+    if (!fs.existsSync(LOGINS_CSV_PATH)) {
+      return [];
+    }
+
+    const csvText = fs.readFileSync(LOGINS_CSV_PATH, 'utf8');
+    const lines = csvText.split('\n').filter(line => line.trim());
+    
+    if (lines.length < 2) {
+      return [];
+    }
+
+    const headers = parseCSVLine(lines[0]);
+    const logins = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+      const values = parseCSVLine(lines[i]);
+      if (values.length === headers.length) {
+        const login = {};
+        headers.forEach((header, index) => {
+          login[header] = values[index] || '';
+        });
+        logins.push(login);
+      }
+    }
+    
+    return logins;
+  } catch (error) {
+    console.error('Error reading logins CSV:', error);
+    return [];
+  }
+}
+
+// Write logins to CSV
+function writeLogins(logins) {
+  try {
+    const headers = ['email', 'password_hash', 'user_id', 'created_at'];
+    let csv = headers.join(',') + '\n';
+    
+    logins.forEach(login => {
+      const row = headers.map(header => {
+        let value = login[header] || '';
+        // Escape quotes and wrap in quotes if contains comma or newline
+        if (typeof value === 'string' && (value.includes(',') || value.includes('\n') || value.includes('"'))) {
+          value = '"' + value.replace(/"/g, '""') + '"';
+        }
+        return value;
+      });
+      csv += row.join(',') + '\n';
+    });
+    
+    fs.writeFileSync(LOGINS_CSV_PATH, csv, 'utf8');
+    return true;
+  } catch (error) {
+    console.error('Error writing logins CSV:', error);
+    return false;
+  }
+}
+
+// Sign up endpoint
+app.post('/api/auth/signup', (req, res) => {
+  try {
+    const { email, password_hash } = req.body;
+    
+    if (!email || !password_hash) {
+      return res.status(400).json({ success: false, error: 'Email and password are required' });
+    }
+
+    const logins = readLogins();
+    
+    // Check if email already exists
+    const existingLogin = logins.find(login => login.email === email.toLowerCase().trim());
+    if (existingLogin) {
+      return res.status(400).json({ success: false, error: 'An account with this email already exists' });
+    }
+
+    // Create new user
+    const userId = generateUserId();
+    const now = new Date().toISOString();
+    
+    const newLogin = {
+      email: email.toLowerCase().trim(),
+      password_hash: password_hash,
+      user_id: userId,
+      created_at: now
+    };
+
+    logins.push(newLogin);
+    
+    if (writeLogins(logins)) {
+      // Also create an entry in accounts.csv for this user
+      const accounts = readAccounts();
+      accounts.push({
+        user_id: userId,
+        name: '',
+        grade: '',
+        gpa: '',
+        weighted: true,
+        sat: '',
+        act: '',
+        psat: '',
+        majors: [],
+        ap_courses: [],
+        activities: [],
+        interests: [],
+        career_goals: '',
+        rating: null,
+        created_at: now,
+        updated_at: now
+      });
+      writeAccounts(accounts);
+      
+      res.json({ success: true, userId: userId });
+    } else {
+      res.status(500).json({ success: false, error: 'Failed to create account' });
+    }
+  } catch (error) {
+    console.error('Sign up error:', error);
+    res.status(500).json({ success: false, error: 'An error occurred' });
+  }
+});
+
+// Sign in endpoint
+app.post('/api/auth/login', (req, res) => {
+  try {
+    const { email, password_hash } = req.body;
+    
+    if (!email || !password_hash) {
+      return res.status(400).json({ success: false, error: 'Email and password are required' });
+    }
+
+    const logins = readLogins();
+    const login = logins.find(l => l.email === email.toLowerCase().trim() && l.password_hash === password_hash);
+    
+    if (login) {
+      res.json({ success: true, userId: login.user_id });
+    } else {
+      res.status(401).json({ success: false, error: 'Invalid email or password' });
+    }
+  } catch (error) {
+    console.error('Sign in error:', error);
+    res.status(500).json({ success: false, error: 'An error occurred' });
+  }
+});
+
+// Profile picture endpoints
+
+// Read profile pictures from CSV
+function readProfilePictures() {
+  try {
+    if (!fs.existsSync(PROFILE_PICTURES_CSV_PATH)) {
+      return [];
+    }
+
+    const csvText = fs.readFileSync(PROFILE_PICTURES_CSV_PATH, 'utf8');
+    const lines = csvText.split('\n').filter(line => line.trim());
+    
+    if (lines.length < 2) {
+      return [];
+    }
+
+    const headers = parseCSVLine(lines[0]);
+    const pictures = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+      const values = parseCSVLine(lines[i]);
+      if (values.length === headers.length) {
+        const picture = {};
+        headers.forEach((header, index) => {
+          picture[header] = values[index] || '';
+        });
+        pictures.push(picture);
+      }
+    }
+    
+    return pictures;
+  } catch (error) {
+    console.error('Error reading profile pictures CSV:', error);
+    return [];
+  }
+}
+
+// Write profile pictures to CSV
+function writeProfilePictures(pictures) {
+  try {
+    const headers = ['user_id', 'profile_picture_base64', 'updated_at'];
+    let csv = headers.join(',') + '\n';
+    
+    pictures.forEach(picture => {
+      const row = headers.map(header => {
+        let value = picture[header] || '';
+        // Escape quotes and wrap in quotes if contains comma or newline
+        if (typeof value === 'string' && (value.includes(',') || value.includes('\n') || value.includes('"'))) {
+          value = '"' + value.replace(/"/g, '""') + '"';
+        }
+        return value;
+      });
+      csv += row.join(',') + '\n';
+    });
+    
+    fs.writeFileSync(PROFILE_PICTURES_CSV_PATH, csv, 'utf8');
+    return true;
+  } catch (error) {
+    console.error('Error writing profile pictures CSV:', error);
+    return false;
+  }
+}
+
+// Save profile picture endpoint
+app.post('/api/profile/picture', (req, res) => {
+  try {
+    const { user_id, profile_picture_base64 } = req.body;
+    
+    if (!user_id) {
+      return res.status(400).json({ success: false, error: 'User ID is required' });
+    }
+
+    if (!profile_picture_base64) {
+      return res.status(400).json({ success: false, error: 'Profile picture is required' });
+    }
+
+    const pictures = readProfilePictures();
+    const existingIndex = pictures.findIndex(p => p.user_id === user_id);
+    const now = new Date().toISOString();
+
+    if (existingIndex >= 0) {
+      // Update existing
+      pictures[existingIndex] = {
+        user_id: user_id,
+        profile_picture_base64: profile_picture_base64,
+        updated_at: now
+      };
+    } else {
+      // Create new
+      pictures.push({
+        user_id: user_id,
+        profile_picture_base64: profile_picture_base64,
+        updated_at: now
+      });
+    }
+
+    if (writeProfilePictures(pictures)) {
+      res.json({ success: true });
+    } else {
+      res.status(500).json({ success: false, error: 'Failed to save profile picture' });
+    }
+  } catch (error) {
+    console.error('Error saving profile picture:', error);
+    res.status(500).json({ success: false, error: 'An error occurred' });
+  }
+});
+
+// Get profile picture endpoint
+app.get('/api/profile/picture', (req, res) => {
+  try {
+    const { user_id } = req.query;
+    
+    if (!user_id) {
+      return res.status(400).json({ success: false, error: 'User ID is required' });
+    }
+
+    const pictures = readProfilePictures();
+    const picture = pictures.find(p => p.user_id === user_id);
+    
+    if (picture && picture.profile_picture_base64) {
+      res.json({ success: true, profile_picture: picture.profile_picture_base64 });
+    } else {
+      res.json({ success: true, profile_picture: null });
+    }
+  } catch (error) {
+    console.error('Error getting profile picture:', error);
+    res.status(500).json({ success: false, error: 'An error occurred' });
+  }
+});
+
 // Health check endpoint for Render
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Test email endpoint (for development/testing)
+app.post('/api/email/test', async (req, res) => {
+  try {
+    const { to } = req.body;
+    
+    if (!to) {
+      return res.status(400).json({ success: false, error: 'Email address is required' });
+    }
+
+    if (!emailTransporter) {
+      return res.status(500).json({ success: false, error: 'Email transporter not configured. Please add your email API key to email-key.txt' });
+    }
+
+    const testHtml = `
+      <h2>Test Email from Path Pal</h2>
+      <p>This is a test email to verify that your email configuration is working correctly.</p>
+      <p>If you received this email, your email API is properly configured!</p>
+      <p style="color: #666; font-size: 0.9em; margin-top: 2em;">Sent from Path Pal at ${new Date().toLocaleString()}</p>
+    `;
+
+    const success = await sendEmail(to, 'Path Pal Email Test', testHtml);
+
+    if (success) {
+      res.json({ success: true, message: 'Test email sent successfully' });
+    } else {
+      res.status(500).json({ success: false, error: 'Failed to send test email' });
+    }
+  } catch (error) {
+    console.error('Test email error:', error);
+    res.status(500).json({ success: false, error: 'An error occurred while sending test email' });
+  }
 });
 
 app.listen(PORT, '0.0.0.0', () => {
@@ -705,6 +1123,22 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`✓ Accounts storage initialized with ${accounts.length} account(s)`);
   } else {
     console.log('✓ Accounts storage initialized (empty)');
+  }
+  
+  // Initialize logins storage
+  if (fs.existsSync(LOGINS_CSV_PATH)) {
+    const logins = readLogins();
+    console.log(`✓ Logins storage initialized with ${logins.length} login(s)`);
+  } else {
+    console.log('✓ Logins storage initialized (empty)');
+  }
+  
+  // Initialize profile pictures storage
+  if (fs.existsSync(PROFILE_PICTURES_CSV_PATH)) {
+    const pictures = readProfilePictures();
+    console.log(`✓ Profile pictures storage initialized with ${pictures.length} picture(s)`);
+  } else {
+    console.log('✓ Profile pictures storage initialized (empty)');
   }
 });
 

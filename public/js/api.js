@@ -169,8 +169,8 @@ const SavedColleges = {
     if (colleges.length >= 5) {
       return false; // Limit reached
     }
-    colleges.push(college);
-    Storage.set('savedColleges', colleges);
+      colleges.push(college);
+      Storage.set('savedColleges', colleges);
     return true; // Successfully added
   },
   

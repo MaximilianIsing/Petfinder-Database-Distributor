@@ -39,6 +39,8 @@
       <li><a href="/planner.html"><img src="/media/icons/Calender256x256.png" alt="4-Year Planner" class="nav-icon"> 4-Year Planner</a></li>
       <li><a href="/messages.html"><img src="/media/icons/Chat256x256.png" alt="AI Counselor" class="nav-icon"> AI Counselor</a></li>
       <li><a href="/saved.html"><img src="/media/icons/Star256x256.png" alt="Saved Colleges" class="nav-icon"> Saved Colleges</a></li>
+      <li><a href="#" onclick="handleSignOut(); return false;"><img src="/media/icons/SignOut256x256.png" alt="Sign Out" class="nav-icon"> Sign Out</a></li>
+      <li><a href="https://forms.gle/ULMYUSDifpanJ9KMA" target="_blank"><img src="/media/icons/Feedback256x256.png" alt="Feedback" class="nav-icon"> Feedback</a></li>
     </ul>
   </nav>
 
@@ -103,7 +105,7 @@
 
   <footer>
     <div class="container">
-      <p>&copy; 2025 Path Pal. v1.07</p>
+      <p>&copy; 2025 Path Pal. v1.08</p>
     </div>
   </footer>
 
@@ -235,6 +237,13 @@
       } catch (error) {
         content.innerHTML = '<p style="color: var(--text-light);">Unable to load next steps at this time.</p>';
       }
+    }
+  </script>
+  <script src="/js/auth.js"></script>
+  <script>
+    function handleSignOut() {
+      signOut();
+      window.location.href = '/pages/login.html';
     }
   </script>
 </body>

@@ -39,6 +39,8 @@
       <li><a href="/planner.html"><img src="/media/icons/Calender256x256.png" alt="4-Year Planner" class="nav-icon"> 4-Year Planner</a></li>
       <li><a href="/messages.html"><img src="/media/icons/Chat256x256.png" alt="AI Counselor" class="nav-icon"> AI Counselor</a></li>
       <li><a href="/saved.html"><img src="/media/icons/Star256x256.png" alt="Saved Colleges" class="nav-icon"> Saved Colleges</a></li>
+      <li><a href="#" onclick="handleSignOut(); return false;"><img src="/media/icons/SignOut256x256.png" alt="Sign Out" class="nav-icon"> Sign Out</a></li>
+      <li><a href="https://forms.gle/ULMYUSDifpanJ9KMA" target="_blank"><img src="/media/icons/Feedback256x256.png" alt="Feedback" class="nav-icon"> Feedback</a></li>
     </ul>
   </nav>
 
@@ -49,8 +51,15 @@
       <!-- Profile Overview -->
       <div class="card">
         <div class="profile-header" style="text-align: center; margin-bottom: 1.5rem;">
-          <div style="width: 100px; height: 100px; background: var(--light-mint); border-radius: 50%; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center;">
-            <img src="/media/icons/Profile256x256.png" alt="Profile" style="width: 64px; height: 64px;">
+          <div style="position: relative; display: inline-block; margin-bottom: 1rem;">
+            <div id="profile-picture-container" style="width: 100px; height: 100px; background: var(--light-mint); border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid var(--primary-green);">
+              <img id="profile-picture" src="/media/icons/Profile256x256.png" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+              <img id="profile-picture-placeholder" src="/media/icons/Profile256x256.png" alt="Profile" style="width: 64px; height: 64px;">
+            </div>
+            <label for="profile-picture-input" style="position: absolute; bottom: 0; right: 0; background: var(--light-mint); border: 2px solid var(--primary-green); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+              <img src="/media/icons/Camera256x256.png" alt="Camera" style="width: 20px; height: 20px;">
+              <input type="file" id="profile-picture-input" accept="image/*" style="display: none;">
+            </label>
           </div>
           <h2 id="profile-name" style="color: var(--primary-green);">Student Name</h2>
         </div>
@@ -203,27 +212,10 @@
         <h3>Intended Majors</h3>
         <div class="form-group">
           <label>Select your intended major(s)</label>
-          <select id="majors" multiple style="height: 120px;">
-            <option value="Computer Science">Computer Science</option>
-            <option value="Engineering">Engineering</option>
-            <option value="Business">Business</option>
-            <option value="Medicine/Pre-Med">Medicine/Pre-Med</option>
-            <option value="Law/Pre-Law">Law/Pre-Law</option>
-            <option value="Education">Education</option>
-            <option value="Psychology">Psychology</option>
-            <option value="Biology">Biology</option>
-            <option value="Chemistry">Chemistry</option>
-            <option value="Mathematics">Mathematics</option>
-            <option value="Physics">Physics</option>
-            <option value="Economics">Economics</option>
-            <option value="Social Sciences">Social Sciences</option>
-            <option value="Political Science">Political Science</option>
-            <option value="Journalism">Journalism</option>
-            <option value="Art">Art</option>
-            <option value="Music">Music</option>
-            <option value="Other">Other</option>
-          </select>
-          <small>You may select up to 3.</small>
+          <div id="majors-container" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-top: 0.5rem; max-height: 200px; overflow-y: auto; align-items: center;">
+            <!-- Major options will be rendered here -->
+          </div>
+          <small style="display: block; margin-top: 0.5rem;">You may select up to 3.</small>
         </div>
         <div id="selected-majors" style="margin-top: 1rem;"></div>
       </div>
@@ -271,21 +263,211 @@
 
   <footer>
     <div class="container">
-      <p>&copy; 2025 Path Pal. v1.07</p>
+      <p>&copy; 2025 Path Pal. v1.08</p>
     </div>
   </footer>
 
   <script src="/js/api.js"></script>
   <script src="/js/app.js"></script>
+  <style>
+    .major-option {
+      position: relative;
+      padding: 0.5rem 0.75rem;
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--white);
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      font-family: 'Arvo', serif;
+      font-size: 0.85rem;
+      color: var(--text-dark);
+      -webkit-tap-highlight-color: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+    }
+    .major-option:hover {
+      border-color: var(--primary-green);
+      background: var(--light-mint);
+    }
+    .major-option input[type="checkbox"] {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .major-option.selected {
+      background: var(--primary-green);
+      color: var(--white);
+      border-color: var(--primary-green);
+    }
+    .major-option.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  </style>
   <script>
     // Initialize user ID on page load
     document.addEventListener('DOMContentLoaded', async () => {
       // Initialize user ID first
       await initializeUserId();
       
+      // Initialize majors selection
+      initializeMajorsSelection();
+      
+      // Initialize profile picture upload
+      const profilePictureInput = document.getElementById('profile-picture-input');
+      if (profilePictureInput) {
+        profilePictureInput.addEventListener('change', handleProfilePictureUpload);
+      }
+      
       // Load profile data
       loadProfile();
     });
+
+    async function handleProfilePictureUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        showNotification('Please select an image file', 'error');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        showNotification('Image must be smaller than 5MB', 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const imageData = e.target.result;
+        
+        // Store in localStorage for immediate display
+        localStorage.setItem('profile-picture', imageData);
+        
+        // Display the image
+        const profilePicture = document.getElementById('profile-picture');
+        const placeholder = document.getElementById('profile-picture-placeholder');
+        if (profilePicture && placeholder) {
+          profilePicture.src = imageData;
+          profilePicture.style.display = 'block';
+          placeholder.style.display = 'none';
+        }
+        
+        // Save to server
+        try {
+          const userId = getUserId();
+          const response = await fetch('/api/profile/picture', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              user_id: userId,
+              profile_picture_base64: imageData
+            })
+          });
+
+          const result = await response.json();
+          if (result.success) {
+            showNotification('Profile picture updated', 'success');
+          } else {
+            showNotification('Failed to save profile picture to server', 'error');
+          }
+        } catch (error) {
+          console.error('Error saving profile picture:', error);
+          showNotification('Profile picture saved locally, but failed to sync to server', 'warning');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    const MAJORS_LIST = [
+      'Computer Science',
+      'Engineering',
+      'Business',
+      'Medicine/Pre-Med',
+      'Law/Pre-Law',
+      'Education',
+      'Psychology',
+      'Biology',
+      'Chemistry',
+      'Mathematics',
+      'Physics',
+      'Economics',
+      'Social Sciences',
+      'Political Science',
+      'Journalism',
+      'Art',
+      'Music',
+      'Other'
+    ];
+
+    function initializeMajorsSelection() {
+      const container = document.getElementById('majors-container');
+      if (!container) return;
+
+      container.innerHTML = '';
+      MAJORS_LIST.forEach(major => {
+        const option = document.createElement('div');
+        option.className = 'major-option';
+        option.dataset.major = major;
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `major-${major.replace(/[^a-zA-Z0-9]/g, '-')}`;
+        checkbox.value = major;
+        
+        const label = document.createElement('label');
+        label.htmlFor = checkbox.id;
+        label.textContent = major;
+        label.style.cursor = 'pointer';
+        label.style.display = 'flex';
+        label.style.width = '100%';
+        label.style.alignItems = 'center';
+        label.style.justifyContent = 'center';
+        label.style.margin = '0';
+        
+        option.appendChild(checkbox);
+        option.appendChild(label);
+        
+        // Handle click on the entire option div
+        option.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          const isSelected = checkbox.checked;
+          const selectedCount = getSelectedMajors().length;
+          
+          if (isSelected) {
+            // Deselect
+            checkbox.checked = false;
+            option.classList.remove('selected');
+          } else {
+            // Check if we can select (max 3)
+            if (selectedCount >= 3) {
+              showNotification('You can only select up to 3 majors.', 'warning');
+              return;
+            }
+            checkbox.checked = true;
+            option.classList.add('selected');
+          }
+          
+          updateSelectedMajors();
+        });
+        
+        container.appendChild(option);
+      });
+    }
+
+    function getSelectedMajors() {
+      const checkboxes = document.querySelectorAll('#majors-container input[type="checkbox"]:checked');
+      return Array.from(checkboxes).map(cb => cb.value);
+    }
 
     function showTestSection(type) {
       const sections = ['sat', 'psat', 'act'];
@@ -495,6 +677,37 @@
       try {
         const profile = await UserProfile.get();
         
+        // Load profile picture
+        const profilePicture = document.getElementById('profile-picture');
+        const placeholder = document.getElementById('profile-picture-placeholder');
+        
+        // Try to load from server first, then fallback to localStorage
+        let savedPicture = localStorage.getItem('profile-picture');
+        
+        try {
+          const userId = getUserId();
+          const response = await fetch(`/api/profile/picture?user_id=${encodeURIComponent(userId)}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.profile_picture) {
+              savedPicture = data.profile_picture;
+              // Update localStorage with server version
+              localStorage.setItem('profile-picture', savedPicture);
+            }
+          }
+        } catch (error) {
+          console.error('Error loading profile picture from server:', error);
+        }
+        
+        if (savedPicture && profilePicture && placeholder) {
+          profilePicture.src = savedPicture;
+          profilePicture.style.display = 'block';
+          placeholder.style.display = 'none';
+        } else if (profilePicture && placeholder) {
+          profilePicture.style.display = 'none';
+          placeholder.style.display = 'block';
+        }
+        
         document.getElementById('name').value = profile.name || '';
         document.getElementById('grade').value = profile.grade || '';
         document.getElementById('gpa').value = profile.gpa || '';
@@ -632,33 +845,21 @@
         
         // Load selected majors (respect max 3)
         if (profile.majors && profile.majors.length > 0) {
-          const majorsSelect = document.getElementById('majors');
           const limitedMajors = profile.majors.slice(0, 3);
-          Array.from(majorsSelect.options).forEach(option => {
-            if (limitedMajors.includes(option.value)) {
-              option.selected = true;
-            } else {
-              option.selected = false;
+          limitedMajors.forEach(major => {
+            const checkbox = document.querySelector(`#majors-container input[value="${major}"]`);
+            if (checkbox) {
+              checkbox.checked = true;
+              const option = checkbox.closest('.major-option');
+              if (option) {
+                option.classList.add('selected');
+              }
             }
           });
         }
         
         updateProfileName();
         updateSelectedMajors();
-        
-        // Listen for changes
-        const majorsSelect = document.getElementById('majors');
-        majorsSelect.addEventListener('change', (e) => {
-          const selectedOptions = Array.from(majorsSelect.selectedOptions);
-          if (selectedOptions.length > 3) {
-            // Deselect the last changed option
-            const last = e.target.options[e.target.selectedIndex];
-            if (last && last.selected) {
-              last.selected = false;
-            }
-          }
-          updateSelectedMajors();
-        });
         document.getElementById('name').addEventListener('input', updateProfileName);
         document.getElementById('grade').addEventListener('change', updateProfileName);
 
@@ -666,8 +867,25 @@
         const apCountSelectChange = document.getElementById('ap-count');
         if (apCountSelectChange) {
           apCountSelectChange.addEventListener('change', (e) => {
-            const count = parseInt(e.target.value, 10) || 0;
-            renderApRows(count);
+            const newCount = parseInt(e.target.value, 10) || 0;
+            // Collect current AP course values before re-rendering
+            // Check for existing AP inputs (up to 9)
+            const currentApCourses = [];
+            for (let i = 0; i < 9; i++) {
+              const courseEl = document.getElementById(`ap-course-${i}`);
+              const scoreEl = document.getElementById(`ap-score-${i}`);
+              if (courseEl || scoreEl) {
+                // Element exists, get its value
+                const course = courseEl ? (courseEl.value || '').trim() : '';
+                const score = scoreEl ? (scoreEl.value || '').trim() : '';
+                currentApCourses.push({ course: course, score: score });
+              } else {
+                // Element doesn't exist yet, add empty entry
+                currentApCourses.push({ course: '', score: '' });
+              }
+            }
+            // Render with preserved values (will only show up to newCount)
+            renderApRows(newCount, currentApCourses);
           });
         }
 
@@ -675,8 +893,25 @@
         const activitiesCountSelect = document.getElementById('activities-count');
         if (activitiesCountSelect) {
           activitiesCountSelect.addEventListener('change', (e) => {
-            const count = parseInt(e.target.value, 10) || 0;
-            renderActivitiesRows(count);
+            const newCount = parseInt(e.target.value, 10) || 0;
+            // Collect current activity values before re-rendering
+            // Check for existing activity inputs (up to 10)
+            const currentActivities = [];
+            for (let i = 0; i < 10; i++) {
+              const hoursEl = document.getElementById(`activity-hours-${i}`);
+              const descEl = document.getElementById(`activity-desc-${i}`);
+              if (hoursEl || descEl) {
+                // Element exists, get its value
+                const hours = hoursEl ? (hoursEl.value || '').trim() : '';
+                const desc = descEl ? (descEl.value || '').trim() : '';
+                currentActivities.push({ hours: hours, description: desc });
+              } else {
+                // Element doesn't exist yet, add empty entry
+                currentActivities.push({ hours: '', description: '' });
+              }
+            }
+            // Render with preserved values (will only show up to newCount)
+            renderActivitiesRows(newCount, currentActivities);
           });
         }
 
@@ -741,9 +976,19 @@
     }
 
     function updateSelectedMajors() {
-      const majorsSelect = document.getElementById('majors');
-      const selected = Array.from(majorsSelect.selectedOptions).map(o => o.value);
+      const selected = getSelectedMajors();
       const container = document.getElementById('selected-majors');
+      
+      // Update disabled state for unselected options
+      const allOptions = document.querySelectorAll('#majors-container .major-option');
+      allOptions.forEach(option => {
+        const checkbox = option.querySelector('input[type="checkbox"]');
+        if (!checkbox.checked && selected.length >= 3) {
+          option.classList.add('disabled');
+        } else {
+          option.classList.remove('disabled');
+        }
+      });
       
       if (selected.length > 0) {
         container.innerHTML = '<strong>Selected:</strong> ' + selected.join(', ');
@@ -856,7 +1101,7 @@
           actMath: actMath,
           actReading: actReading,
           actScience: actScience,
-          majors: Array.from(document.getElementById('majors').selectedOptions).map(o => o.value),
+          majors: getSelectedMajors(),
           apCourses: apCourses,
           activities: activitiesArr, // Store as JSON array
           careerGoals: document.getElementById('career-goals').value
@@ -871,6 +1116,13 @@
         console.error('Error saving profile:', error);
         showNotification('Error saving profile. Please try again.', 'error');
       }
+    }
+  </script>
+  <script src="/js/auth.js"></script>
+  <script>
+    function handleSignOut() {
+      signOut();
+      window.location.href = '/pages/login.html';
     }
   </script>
 </body>

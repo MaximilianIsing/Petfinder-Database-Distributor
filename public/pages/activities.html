@@ -19,8 +19,8 @@
     <div class="header-content container">
       <div class="logo">
         <a href="/index.html" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none; color: inherit;">
-          <img src="/media/logo/logo64x64.png" alt="Path Pal Logo">
-          <h1>Path Pal</h1>
+        <img src="/media/logo/logo64x64.png" alt="Path Pal Logo">
+        <h1>Path Pal</h1>
         </a>
       </div>
       <button class="menu-toggle" aria-label="Toggle menu"><img src="/media/icons/Hamburger128x128.png" alt="Menu" style="width: 24px; height: 24px;"></button>
@@ -39,6 +39,8 @@
       <li><a href="/planner.html"><img src="/media/icons/Calender256x256.png" alt="4-Year Planner" class="nav-icon"> 4-Year Planner</a></li>
       <li><a href="/messages.html"><img src="/media/icons/Chat256x256.png" alt="AI Counselor" class="nav-icon"> AI Counselor</a></li>
       <li><a href="/saved.html"><img src="/media/icons/Star256x256.png" alt="Saved Colleges" class="nav-icon"> Saved Colleges</a></li>
+      <li><a href="#" onclick="handleSignOut(); return false;"><img src="/media/icons/SignOut256x256.png" alt="Sign Out" class="nav-icon"> Sign Out</a></li>
+      <li><a href="https://forms.gle/ULMYUSDifpanJ9KMA" target="_blank"><img src="/media/icons/Feedback256x256.png" alt="Feedback" class="nav-icon"> Feedback</a></li>
     </ul>
   </nav>
 
@@ -93,7 +95,7 @@
 
   <footer>
     <div class="container">
-      <p>&copy; 2025 Path Pal. v1.07</p>
+      <p>&copy; 2025 Path Pal. v1.08</p>
     </div>
   </footer>
 
@@ -144,7 +146,7 @@
     async function loadRecommendations() {
       const profile = await UserProfile.get();
       const container = document.getElementById('activities-list');
-      
+
       // Show loading state
       container.innerHTML = '<div class="card"><p class="loading">Loading recommendations...</p></div>';
       
@@ -155,19 +157,19 @@
         // Get AI recommendations if profile has enough info
         if (profile.majors && profile.majors.length > 0) {
           const message = `Based on my profile (Grade: ${profile.grade || 'not set'}, Majors: ${(profile.majors || []).join(', ') || 'not specified'}, Career Goals: ${profile.careerGoals || 'not specified'}), suggest 3-5 specific extracurricular activities, clubs, volunteer opportunities, or internships that would strengthen my college application. Format as a numbered list with brief descriptions.`;
-          
-          const response = await sendChatMessage(message);
-          const recommendations = response.message.split('\n').filter(line => line.trim() && /^\d+[.)]/.test(line.trim()));
-          
+        
+        const response = await sendChatMessage(message);
+        const recommendations = response.message.split('\n').filter(line => line.trim() && /^\d+[.)]/.test(line.trim()));
+        
           // Add AI recommendations
           const aiActivities = recommendations.map((rec, idx) => {
             const text = rec.replace(/^\d+[.)]\s*/, '').trim();
             const parts = text.split(':');
             return {
-              id: defaultActivities.length + idx + 1,
+          id: defaultActivities.length + idx + 1,
               title: parts[0].trim(),
               description: parts.slice(1).join(':').trim() || 'Personalized recommendation based on your profile',
-              category: 'career',
+          category: 'career',
               platform: 'AI Recommended',
               timeCommitment: 'Varies',
               gradeLevel: profile.grade || '9-12'
@@ -181,7 +183,7 @@
         // Continue with default activities
       }
 
-      displayActivities(allActivities);
+        displayActivities(allActivities);
     }
 
     function displayActivities(activities) {
@@ -217,13 +219,13 @@
         card.innerHTML = `
           <div style="margin-bottom: 1rem;">
             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
-              <div style="flex: 1;">
-                <h4 style="color: var(--primary-green); margin-bottom: 0.5rem;">${activity.title}</h4>
+            <div style="flex: 1;">
+              <h4 style="color: var(--primary-green); margin-bottom: 0.5rem;">${activity.title}</h4>
                 <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 0.75rem; line-height: 1.5;">${activity.description || 'No description available'}</p>
                 <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
-                  <span class="badge badge-target" style="background: var(--light-mint); color: var(--primary-green);">
-                    ${categoryLabels[activity.category] || activity.category}
-                  </span>
+              <span class="badge badge-target" style="background: var(--light-mint); color: var(--primary-green);">
+                ${categoryLabels[activity.category] || activity.category}
+              </span>
                   ${activity.timeCommitment ? `<span style="color: var(--text-light); font-size: 0.85rem; display: flex; align-items: center; gap: 0.25rem;"><img src="/media/icons/HourGlass176x256.png" alt="Time" style="width: 14px; height: 14px;"> ${activity.timeCommitment}</span>` : ''}
                   ${activity.platform ? `<span style="color: var(--text-light); font-size: 0.85rem; display: flex; align-items: center; gap: 0.25rem;"><img src="/media/icons/Location128x128.png" alt="Location" style="width: 14px; height: 14px;"> ${activity.platform}</span>` : ''}
                   ${activity.gradeLevel ? `<span style="color: var(--text-light); font-size: 0.85rem; display: flex; align-items: center; gap: 0.25rem;"><img src="/media/icons/Book256x256.png" alt="Grade" style="width: 14px; height: 14px;"> Grades ${activity.gradeLevel}</span>` : ''}
@@ -306,7 +308,7 @@
         <div style="background: var(--light-mint); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid var(--primary-green);">
           <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
             <div style="flex: 1;">
-              <h4 style="color: var(--primary-green); margin-bottom: 0.5rem;">${activity.title}</h4>
+          <h4 style="color: var(--primary-green); margin-bottom: 0.5rem;">${activity.title}</h4>
               <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 0.5rem; line-height: 1.5;">${activity.description || 'No description'}</p>
               <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
                 <span class="badge badge-target" style="background: var(--white); color: var(--primary-green); border: 1px solid var(--primary-green);">
@@ -328,6 +330,13 @@
       Storage.set('savedActivities', saved);
       loadSavedActivities();
       displayActivities(allActivities);
+    }
+  </script>
+  <script src="/js/auth.js"></script>
+  <script>
+    function handleSignOut() {
+      signOut();
+      window.location.href = '/pages/login.html';
     }
   </script>
 </body>

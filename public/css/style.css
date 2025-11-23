@@ -764,6 +764,11 @@ main {
   color: var(--white);
 }
 
+.btn-secondary:active {
+  background: var(--light-mint) !important;
+  color: var(--primary-green) !important;
+}
+
 .btn-secondary.no-hover:hover {
   background: var(--light-mint) !important;
   color: var(--primary-green) !important;

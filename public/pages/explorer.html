@@ -319,6 +319,8 @@
       <li><a href="/planner.html"><img src="/media/icons/Calender256x256.png" alt="4-Year Planner" class="nav-icon"> 4-Year Planner</a></li>
       <li><a href="/messages.html"><img src="/media/icons/Chat256x256.png" alt="AI Counselor" class="nav-icon"> AI Counselor</a></li>
       <li><a href="/saved.html"><img src="/media/icons/Star256x256.png" alt="Saved Colleges" class="nav-icon"> Saved Colleges</a></li>
+      <li><a href="#" onclick="handleSignOut(); return false;"><img src="/media/icons/SignOut256x256.png" alt="Sign Out" class="nav-icon"> Sign Out</a></li>
+      <li><a href="https://forms.gle/ULMYUSDifpanJ9KMA" target="_blank"><img src="/media/icons/Feedback256x256.png" alt="Feedback" class="nav-icon"> Feedback</a></li>
     </ul>
   </nav>
 
@@ -394,7 +396,7 @@
 
   <footer>
     <div class="container">
-      <p>&copy; Path Pal 2025 — v1.07</p>
+      <p>&copy; Path Pal 2025 — v1.08</p>
     </div>
   </footer>
 
@@ -410,10 +412,11 @@
     let studentRating = null;
 
     // Client-side implementation of getAdmissionOdds (from rate-system.js)
-    function getAdmissionOdds(studentScore, collegeScore) {
+    function getAdmissionOdds(studentScore, collegeScore, acceptanceRate) {
       // Parse inputs
       const student = typeof studentScore === 'string' ? parseFloat(studentScore) : (studentScore || 0);
       const college = typeof collegeScore === 'string' ? parseFloat(collegeScore) : (collegeScore || 0);
+      const acceptance = typeof acceptanceRate === 'string' ? parseFloat(acceptanceRate) : (acceptanceRate || null);
 
       // Ensure scores are in valid range
       const studentNorm = Math.max(0, Math.min(100, student));
@@ -422,20 +425,67 @@
       // Calculate delta (difference)
       const delta = studentNorm - collegeNorm;
 
-      // Base odds when scores are equal
-      const baseOdds = 50; // 50% when student matches college
+      // Base odds when scores are equal - start from the college's acceptance rate if available
+      // If no acceptance rate, default to 50%
+      let baseOdds = 50;
+      if (acceptance !== null && acceptance >= 0 && acceptance <= 1) {
+        // Use acceptance rate as base, but adjust based on score delta
+        // For example: 15% acceptance rate college = base odds of 15% when student matches college
+        baseOdds = acceptance * 100;
+      }
 
+      // Calculate odds based on delta
+      // Positive delta (student > college) = higher odds
+      // Negative delta (student < college) = lower odds
+      
       // Use a sigmoid-like curve for smooth transitions
       const deltaMultiplier = 1.5; // Each point of delta = 1.5% change
-      
+      let odds = baseOdds + (delta * deltaMultiplier);
+
       // Apply sigmoid-like curve for more realistic distribution
+      // This makes extreme differences less impactful
       const sigmoidFactor = 0.8; // Smoothing factor
       const normalizedDelta = delta / 50; // Normalize to -1 to 1 range
       const sigmoidDelta = (normalizedDelta / (1 + Math.abs(normalizedDelta) * sigmoidFactor)) * 50;
-      let odds = baseOdds + (sigmoidDelta * deltaMultiplier);
+      odds = baseOdds + (sigmoidDelta * deltaMultiplier);
 
-      // Clamp to reasonable bounds (3% to 97%)
-      odds = Math.max(3, Math.min(97, odds));
+      // If acceptance rate is provided, use it as a constraint
+      // The odds should not exceed the acceptance rate by too much, and should scale with it
+      if (acceptance !== null && acceptance >= 0 && acceptance <= 1) {
+        const acceptancePercent = acceptance * 100;
+        
+        // Scale the odds relative to the acceptance rate
+        // If baseOdds was set from acceptance rate, we've already accounted for it
+        // But we should ensure odds don't go too far above/below the acceptance rate based on delta alone
+        
+        // For highly selective schools (low acceptance), limit how high odds can go
+        if (acceptancePercent < 20) {
+          // Very selective: odds can go up to 2.5x the acceptance rate for strong students
+          const maxOdds = Math.min(acceptancePercent * 2.5, 95);
+          odds = Math.min(odds, maxOdds);
+        } else if (acceptancePercent < 50) {
+          // Moderately selective: odds can go up to 1.8x the acceptance rate
+          const maxOdds = Math.min(acceptancePercent * 1.8, 95);
+          odds = Math.min(odds, maxOdds);
+        } else {
+          // Less selective: odds can go higher, but still cap at reasonable level
+          const maxOdds = Math.min(acceptancePercent * 1.5, 95);
+          odds = Math.min(odds, maxOdds);
+        }
+        
+        // Ensure odds don't go below a minimum based on acceptance rate
+        // Even weak students have some chance at less selective schools
+        if (acceptancePercent > 50) {
+          const minOdds = Math.max(acceptancePercent * 0.3, 5);
+          odds = Math.max(odds, minOdds);
+        } else {
+          const minOdds = Math.max(acceptancePercent * 0.2, 2);
+          odds = Math.max(odds, minOdds);
+        }
+      }
+
+      // Clamp to reasonable bounds (2% to 98%)
+      odds = Math.max(2, Math.min(98, odds));
 
       // Round to nearest integer
       return Math.round(odds);
@@ -491,6 +541,76 @@
       }
     }
 
+    // Helper function for fuzzy string matching (Levenshtein distance)
+    function levenshteinDistance(str1, str2) {
+      const len1 = str1.length;
+      const len2 = str2.length;
+      const matrix = [];
+      
+      for (let i = 0; i <= len1; i++) {
+        matrix[i] = [i];
+      }
+      
+      for (let j = 0; j <= len2; j++) {
+        matrix[0][j] = j;
+      }
+      
+      for (let i = 1; i <= len1; i++) {
+        for (let j = 1; j <= len2; j++) {
+          if (str1[i - 1] === str2[j - 1]) {
+            matrix[i][j] = matrix[i - 1][j - 1];
+          } else {
+            matrix[i][j] = Math.min(
+              matrix[i - 1][j] + 1,     // deletion
+              matrix[i][j - 1] + 1,     // insertion
+              matrix[i - 1][j - 1] + 1  // substitution
+            );
+          }
+        }
+      }
+      
+      return matrix[len1][len2];
+    }
+
+    // Helper function to check if search term matches college (with abbreviations and fuzzy matching)
+    function matchesSearch(college, searchTerm) {
+      if (!searchTerm) return true;
+      
+      const name = (college.name || '').toLowerCase();
+      
+      // 1. Check if search term is a substring of the college name (e.g., "stan" matches "stanford")
+      if (name.includes(searchTerm)) {
+        return true;
+      }
+      
+      // 2. Check if search term matches first letters of words in order (abbreviation matching)
+      const skipWords = new Set(['of', 'the', 'and', 'at', 'in', 'on', 'for', 'a', 'an']);
+      const nameWords = name.split(/\s+/);
+      const significantWords = nameWords.filter(w => w.length > 0 && !skipWords.has(w));
+      
+      if (significantWords.length >= searchTerm.length) {
+        let searchIndex = 0;
+        for (let i = 0; i < significantWords.length && searchIndex < searchTerm.length; i++) {
+          const firstLetter = significantWords[i][0];
+          if (firstLetter === searchTerm[searchIndex]) {
+            searchIndex++;
+          }
+        }
+        // If all characters of search term matched first letters in order, it's a match
+        if (searchIndex === searchTerm.length) {
+          return true;
+        }
+      }
+      
+      // 3. Check if search term is within 2 character differences (fuzzy matching)
+      const distance = levenshteinDistance(searchTerm, name);
+      if (distance <= 2) {
+        return true;
+      }
+      
+      return false;
+    }
+
     function handleSearch() {
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(() => {
@@ -506,17 +626,9 @@
       const typeFilter = document.getElementById('filter-type').value;
 
       filteredColleges = allColleges.filter(college => {
-        // Search filter
+        // Search filter with abbreviations and fuzzy matching
         if (searchTerm) {
-          const name = (college.name || '').toLowerCase();
-          const city = (college.city || '').toLowerCase();
-          const state = (college.state || '').toLowerCase();
-          const location = (college.location || '').toLowerCase();
-          
-          if (!name.includes(searchTerm) && 
-              !city.includes(searchTerm) && 
-              !state.includes(searchTerm) &&
-              !location.includes(searchTerm)) {
+          if (!matchesSearch(college, searchTerm)) {
             return false;
           }
         }
@@ -527,7 +639,7 @@
           if (studentRating === null || studentRating === undefined || college.rating === null || college.rating === undefined) {
             return false; // Hide colleges when we can't calculate odds
           }
-          const odds = getAdmissionOdds(studentRating, college.rating);
+          const odds = getAdmissionOdds(studentRating, college.rating, college.acceptanceRate);
           const category = categorizeSchool(odds);
           if (category.category !== chanceFilter) return false;
         }
@@ -567,7 +679,7 @@
         container.innerHTML = '<div class="no-results">No colleges match your filters. Try adjusting your search criteria.</div>';
         paginationEl.style.display = 'none';
         return;
-      }
+    }
 
       // Pagination
       const totalPages = Math.ceil(filteredColleges.length / perPage);
@@ -582,7 +694,7 @@
         let odds;
         let oddsDisplay;
         if (studentRating !== null && studentRating !== undefined && college.rating !== null && college.rating !== undefined) {
-          odds = getAdmissionOdds(studentRating, college.rating);
+          odds = getAdmissionOdds(studentRating, college.rating, college.acceptanceRate);
           oddsDisplay = odds + '%';
         } else {
           odds = null;
@@ -837,7 +949,7 @@
       } else {
         const success = SavedColleges.add(college);
         if (success) {
-          showNotification(`${college.name} saved!`, 'success');
+        showNotification(`${college.name} saved!`, 'success');
           displayColleges(); // Only refresh if save was successful
         } else {
           showNotification('Maximum of 5 saved colleges reached. Remove one to save another.', 'error');
@@ -900,7 +1012,7 @@
       // Calculate admission odds
       let oddsText;
       if (studentRating !== null && studentRating !== undefined && college.rating !== null && college.rating !== undefined) {
-        const odds = getAdmissionOdds(studentRating, college.rating);
+        const odds = getAdmissionOdds(studentRating, college.rating, college.acceptanceRate);
         oddsText = `${odds}%`;
       } else {
         oddsText = 'N/A (Complete your profile to see admission odds)';
@@ -908,6 +1020,13 @@
       details += `\n\nYour Admission Odds: ${oddsText}`;
 
       alert(details);
+    }
+  </script>
+  <script src="/js/auth.js"></script>
+  <script>
+    function handleSignOut() {
+      signOut();
+      window.location.href = '/pages/login.html';
     }
   </script>
 </body>

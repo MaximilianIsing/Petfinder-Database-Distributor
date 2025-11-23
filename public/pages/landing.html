@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="description" content="Path Pal - College Admissions Made Easy">
+  <title>Path Pal - Welcome</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/media/logo/logo128x128.png">
+  <link rel="apple-touch-icon" href="/media/AppIcon.png">
+  <link rel="stylesheet" href="/css/style.css">
+  <meta name="theme-color" content="#0d8c79">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      background: var(--white);
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .landing-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      max-width: 100%;
+      box-sizing: border-box;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* Image Carousel */
+    .carousel-container {
+      width: 100%;
+      max-width: 100%;
+      margin-top: 0.5rem;
+      position: relative;
+      overflow: hidden;
+      touch-action: pan-y pinch-zoom;
+      flex-shrink: 1;
+      min-height: 0;
+    }
+
+    .carousel-content {
+      display: flex;
+      transition: transform 0.5s ease-in-out;
+      width: 100%;
+    }
+
+    .carousel-slide {
+      min-width: 100%;
+      width: 100%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .carousel-slide img {
+      width: 100%;
+      max-width: 300px;
+      height: auto;
+      aspect-ratio: 482 / 886;
+      object-fit: contain;
+      display: block;
+    }
+
+    .carousel-dots {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+      padding: 0.75rem;
+      z-index: 5;
+    }
+
+    .carousel-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+      transition: all 0.3s;
+      border: 2px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .carousel-dot:hover {
+      background: rgba(0, 0, 0, 0.5);
+      transform: scale(1.2);
+    }
+
+    .carousel-dot.active {
+      background: var(--primary-green);
+      border-color: var(--primary-green);
+      width: 12px;
+      height: 12px;
+      transform: scale(1.3);
+    }
+
+    /* Bottom Content */
+    .landing-content {
+      text-align: center;
+      width: 100%;
+      max-width: 400px;
+      margin-bottom: 1rem;
+      flex-shrink: 0;
+    }
+
+    .landing-heading {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: var(--primary-green);
+      margin-top: 1rem;
+      margin-bottom: 2rem;
+      line-height: 1.2;
+      text-align: center;
+    }
+    
+    .landing-heading .logo {
+      height: 2.5rem;
+      width: auto;
+      vertical-align: middle;
+      display: inline-block;
+      margin-left: 0.5rem;
+    }
+
+    .landing-button {
+      width: 100%;
+      padding: 1rem 2rem;
+      background: var(--primary-green);
+      color: var(--white);
+      border: none;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      font-family: 'Arvo', serif;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-bottom: 0.25rem;
+    }
+
+    .landing-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      background: #0a6b5d;
+    }
+
+    .landing-button:active {
+      transform: translateY(0);
+    }
+
+    .sign-in-link {
+      color: var(--primary-green);
+      text-decoration: none;
+      font-size: 0.95rem;
+      font-family: 'Arvo', serif;
+      display: inline-block;
+      margin-top: 0;
+    }
+    
+    .sign-in-link strong {
+      font-weight: bold;
+    }
+
+    .sign-in-link:hover {
+      color: #0a6b5d;
+      text-decoration: underline;
+    }
+
+    @media (max-width: 480px) {
+      .landing-heading {
+        font-size: 2rem;
+        margin-top: 0.75rem;
+      }
+      
+      .landing-heading .logo {
+        height: 2rem;
+      }
+      
+      .carousel-slide img {
+        max-width: 75vw;
+      }
+      
+      .carousel-dots {
+        margin-top: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="landing-container">
+    <!-- Image Carousel -->
+    <div class="carousel-container" id="carousel-container">
+      <div class="carousel-content" id="carousel-content">
+        <div class="carousel-slide">
+          <img src="/media/carousel/IM01.png" alt="Carousel Image 1">
+        </div>
+        <div class="carousel-slide">
+          <img src="/media/carousel/IM02.png" alt="Carousel Image 2">
+        </div>
+        <div class="carousel-slide">
+          <img src="/media/carousel/IM03.png" alt="Carousel Image 3">
+        </div>
+        <div class="carousel-slide">
+          <img src="/media/carousel/IM04.png" alt="Carousel Image 4">
+        </div>
+      </div>
+      
+      <!-- Carousel Dots -->
+      <div class="carousel-dots">
+        <div class="carousel-dot active" data-slide="0"></div>
+        <div class="carousel-dot" data-slide="1"></div>
+        <div class="carousel-dot" data-slide="2"></div>
+        <div class="carousel-dot" data-slide="3"></div>
+      </div>
+    </div>
+
+    <!-- Bottom Content -->
+    <div class="landing-content">
+      <h1 class="landing-heading">College admissions made easy <img src="/media/logo/logo64x64.png" alt="Path Pal Logo" class="logo"></h1>
+      <button class="landing-button" onclick="handleGetStarted()">Get Started</button>
+      <div>
+        <a href="#" class="sign-in-link" onclick="handleSignIn(); return false;">Already have an account? <strong>Sign In</strong></a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Check if on desktop and redirect to main page (which shows desktop message)
+    function isMobileDevice() {
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+             (window.innerWidth <= 768 && window.innerHeight <= 1024);
+    }
+
+    // Redirect desktop users to main page
+    if (!isMobileDevice()) {
+      window.location.href = '/pages/index.html';
+    }
+
+    let currentSlide = 0;
+    const carouselContent = document.getElementById('carousel-content');
+    const slides = document.querySelectorAll('.carousel-slide');
+    const dots = document.querySelectorAll('.carousel-dot');
+    const totalSlides = slides.length;
+    let startX = 0;
+    let currentX = 0;
+    let isDragging = false;
+    let autoSlideInterval;
+
+    // Update carousel position
+    function updateCarousel() {
+      carouselContent.style.transform = `translateX(-${currentSlide * 100}%)`;
+      dots.forEach((dot, index) => {
+        dot.classList.toggle('active', index === currentSlide);
+      });
+    }
+
+    // Go to specific slide
+    function goToSlide(index) {
+      currentSlide = Math.max(0, Math.min(totalSlides - 1, index));
+      updateCarousel();
+    }
+
+    // Next slide
+    function nextSlide() {
+      currentSlide = (currentSlide + 1) % totalSlides;
+      updateCarousel();
+    }
+
+    // Touch event handlers for swiping
+    const carouselContainer = document.getElementById('carousel-container');
+    
+    carouselContainer.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+      isDragging = true;
+      clearInterval(autoSlideInterval);
+    });
+
+    carouselContainer.addEventListener('touchmove', (e) => {
+      if (!isDragging) return;
+      currentX = e.touches[0].clientX;
+    });
+
+    carouselContainer.addEventListener('touchend', () => {
+      if (!isDragging) return;
+      isDragging = false;
+      
+      const diffX = startX - currentX;
+      const threshold = 50; // Minimum swipe distance
+      
+      if (Math.abs(diffX) > threshold) {
+        if (diffX > 0) {
+          // Swipe left - next slide
+          nextSlide();
+        } else {
+          // Swipe right - previous slide
+          currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+          updateCarousel();
+        }
+      }
+      
+      // Restart auto-slide
+      startAutoSlide();
+    });
+
+    // Mouse drag support for desktop
+    let mouseDown = false;
+    let mouseStartX = 0;
+    let mouseCurrentX = 0;
+
+    carouselContainer.addEventListener('mousedown', (e) => {
+      mouseDown = true;
+      mouseStartX = e.clientX;
+      clearInterval(autoSlideInterval);
+    });
+
+    carouselContainer.addEventListener('mousemove', (e) => {
+      if (!mouseDown) return;
+      mouseCurrentX = e.clientX;
+    });
+
+    carouselContainer.addEventListener('mouseup', () => {
+      if (!mouseDown) return;
+      mouseDown = false;
+      
+      const diffX = mouseStartX - mouseCurrentX;
+      const threshold = 50;
+      
+      if (Math.abs(diffX) > threshold) {
+        if (diffX > 0) {
+          nextSlide();
+        } else {
+          currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+          updateCarousel();
+        }
+      }
+      
+      startAutoSlide();
+    });
+
+    carouselContainer.addEventListener('mouseleave', () => {
+      mouseDown = false;
+    });
+
+    // Set up dot navigation
+    dots.forEach((dot, index) => {
+      dot.addEventListener('click', () => {
+        goToSlide(index);
+        startAutoSlide();
+      });
+    });
+
+    // Auto-advance function
+    function startAutoSlide() {
+      clearInterval(autoSlideInterval);
+      autoSlideInterval = setInterval(nextSlide, 3000);
+    }
+
+    // Initialize
+    updateCarousel();
+    startAutoSlide();
+
+    // Navigation handlers
+    function handleGetStarted() {
+      window.location.href = '/pages/signup.html';
+    }
+
+    function handleSignIn() {
+      window.location.href = '/pages/login.html';
+    }
+  </script>
+</body>
+</html>
+
