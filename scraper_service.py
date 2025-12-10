@@ -84,9 +84,10 @@ XPATHS = {
 def log(msg: str) -> None:
     ts = time.strftime("%Y-%m-%d %H:%M:%S")
     line = f"[{ts}] {msg}"
-    print(line)
+    print(line, flush=True)  # Flush to ensure immediate output
     with open(LOG_PATH, "a", encoding="utf-8") as f:
         f.write(line + "\n")
+        f.flush()  # Ensure log file is written immediately
 
 
 def log_slug_miss(name: str) -> None:

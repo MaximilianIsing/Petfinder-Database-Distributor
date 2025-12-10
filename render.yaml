@@ -4,7 +4,7 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install --upgrade pip && pip install -r requirements.txt && playwright install chromium
-    startCommand: gunicorn --bind 0.0.0.0:$PORT --preload --workers 1 --threads 4 server:api_app
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --preload --workers 1 --threads 4 --log-level info --access-logfile - --error-logfile - --capture-output server:api_app
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.5
