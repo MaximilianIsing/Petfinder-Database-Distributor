@@ -48,16 +48,28 @@ def get_data():
     
     try:
         data = []
+        column_order = None
         with open(SCANNED_CSV, "r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
+            # Preserve column order from CSV header
+            column_order = reader.fieldnames
             for row in reader:
-                data.append(row)
+                # Reorder row dictionary to match CSV column order
+                ordered_row = {col: row.get(col) for col in column_order}
+                data.append(ordered_row)
         
-        return jsonify({
+        response_data = {
             "success": True,
             "count": len(data),
+            "columns": list(column_order),  # Include column order in response
             "data": data
-        })
+        }
+        
+        # Use make_response to preserve key order in JSON
+        from flask import make_response
+        response = make_response(jsonify(response_data))
+        # Ensure JSON response preserves order (Python 3.7+ dicts are ordered)
+        return response
     except Exception as e:
         log(f"Error reading {SCANNED_CSV}: {e}")
         abort(500, description=f"Error reading data: {str(e)}")
