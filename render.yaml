@@ -3,12 +3,10 @@ services:
     name: college-scraper
     runtime: python
     plan: free
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt && python -m playwright install chromium --with-deps
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
     startCommand: gunicorn --bind 0.0.0.0:$PORT --preload --workers 1 --threads 4 --log-level info --access-logfile - --error-logfile - --capture-output server:api_app
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.5
-      - key: PLAYWRIGHT_BROWSERS_PATH
-        value: /opt/render/.cache/ms-playwright
     # The Flask API runs on port from PORT env var
     # Render will automatically expose this as a public URL

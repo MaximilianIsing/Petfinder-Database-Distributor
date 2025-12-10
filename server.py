@@ -76,6 +76,24 @@ def initialize_app():
     """Initialize the scraper (runs once on app startup)."""
     log("Initializing college scraper...")
     
+    # Ensure Playwright browsers are installed (needed on Render)
+    try:
+        import subprocess
+        import sys
+        log("Checking/installing Playwright Chromium...")
+        result = subprocess.run(
+            [sys.executable, "-m", "playwright", "install", "chromium"],
+            capture_output=True,
+            text=True,
+            timeout=300
+        )
+        if result.returncode == 0:
+            log("Playwright Chromium installed successfully")
+        else:
+            log(f"Warning: Playwright install output: {result.stdout}\n{result.stderr}")
+    except Exception as e:
+        log(f"Warning: Could not install Playwright browsers: {e}")
+    
     # Check and initialize if needed
     check_and_init()
     
