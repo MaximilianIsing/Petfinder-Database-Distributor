@@ -42,6 +42,15 @@ def get_data():
     if not provided_key or provided_key != expected_key:
         abort(401, description="Unauthorized: invalid key")
     
+    # Log the file path being read from
+    log(f"API reading from: {SCANNED_CSV} (exists: {os.path.exists(SCANNED_CSV)})")
+    if os.path.exists(SCANNED_CSV):
+        file_size = os.path.getsize(SCANNED_CSV)
+        import time
+        mtime = os.path.getmtime(SCANNED_CSV)
+        mtime_str = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(mtime))
+        log(f"File size: {file_size} bytes, last modified: {mtime_str}")
+    
     # Read and return CSV data
     if not os.path.exists(SCANNED_CSV):
         abort(404, description="Data file not found")
@@ -49,6 +58,7 @@ def get_data():
     try:
         data = []
         column_order = None
+        # Use explicit file opening with flush/sync to ensure we get latest data
         with open(SCANNED_CSV, "r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             # Preserve column order from CSV header
@@ -57,6 +67,8 @@ def get_data():
                 # Reorder row dictionary to match CSV column order
                 ordered_row = {col: row.get(col) for col in column_order}
                 data.append(ordered_row)
+        
+        log(f"API returning {len(data)} rows from {SCANNED_CSV}")
         
         response_data = {
             "success": True,

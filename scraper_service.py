@@ -597,7 +597,12 @@ def upsert_csv(name: str, fields: Dict[str, str], csv_path: str = SCANNED_CSV, o
         writer = csv.DictWriter(f, fieldnames=ordered_fields)
         writer.writeheader()
         writer.writerows(rows)
+        f.flush()  # Ensure all data is written
+        os.fsync(f.fileno())  # Force write to disk
+    
+    # Atomic replace
     os.replace(tmp, csv_path)
+    log(f"Updated CSV: {csv_path} (wrote {len(rows)} rows)")
 
 
 def main():
