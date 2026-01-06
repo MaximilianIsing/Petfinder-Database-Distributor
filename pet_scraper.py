@@ -14,7 +14,7 @@ import re
 import sys
 import time
 from contextlib import suppress
-from typing import Dict
+from typing import Dict, Tuple
 
 import requests
 from playwright.sync_api import sync_playwright
@@ -302,24 +302,24 @@ def _scrape_pet_page(page, pet_link: str, scraping_key: str) -> Dict[str, str]:
         data["color"] = get_text(page, XPATHS["color"], "color")
         data["breed"] = get_text(page, XPATHS["breed"], "breed")
         
-        # Boolean fields
+        # Boolean fields - use None if text is empty (field not found), otherwise parse
         spayed_text = get_text(page, XPATHS["spayed_neutered"], "spayed_neutered")
-        data["spayed_neutered"] = parse_boolean(spayed_text)
+        data["spayed_neutered"] = parse_boolean(spayed_text) if spayed_text else None
         
         vaccinated_text = get_text(page, XPATHS["vaccinated"], "vaccinated")
-        data["vaccinated"] = parse_boolean(vaccinated_text)
+        data["vaccinated"] = parse_boolean(vaccinated_text) if vaccinated_text else None
         
         special_needs_text = get_text(page, XPATHS["special_needs"], "special_needs")
-        data["special_needs"] = parse_boolean(special_needs_text)
+        data["special_needs"] = parse_boolean(special_needs_text) if special_needs_text else None
         
         kids_text = get_text(page, XPATHS["kids_compatible"], "kids_compatible")
-        data["kids_compatible"] = parse_boolean(kids_text)
+        data["kids_compatible"] = parse_boolean(kids_text) if kids_text else None
         
         dogs_text = get_text(page, XPATHS["dogs_compatible"], "dogs_compatible")
-        data["dogs_compatible"] = parse_boolean(dogs_text)
+        data["dogs_compatible"] = parse_boolean(dogs_text) if dogs_text else None
         
         cats_text = get_text(page, XPATHS["cats_compatible"], "cats_compatible")
-        data["cats_compatible"] = parse_boolean(cats_text)
+        data["cats_compatible"] = parse_boolean(cats_text) if cats_text else None
         
         # About me (get everything in the div)
         # Check for "Show more" button and click it if it exists
@@ -448,6 +448,89 @@ def save_pet_to_csv(pet_data: Dict[str, str], csv_path: str = PET_CSV) -> None:
         except Exception:
             pass
         raise
+
+
+def scrape_pet_data_only(pet_link: str) -> Tuple[Dict[str, str], int]:
+    """
+    Scrape information from a single pet page WITHOUT saving to CSV.
+    This is for verification purposes.
+    
+    Args:
+        pet_link: URL to the pet's page
+        
+    Returns:
+        Tuple of (dictionary containing scraped pet information, count of failed fields)
+    """
+    # Load scraping key
+    try:
+        scraping_key = load_scraping_key()
+    except Exception as e:
+        log(f"Fatal error loading scraping key: {e}")
+        raise
+    
+    # Use Playwright just to parse the HTML (we don't need to navigate)
+    with sync_playwright() as p:
+        try:
+            browser = p.chromium.launch(
+                headless=True,  # Headless is fine since we're just parsing HTML
+                args=[
+                    "--no-sandbox",
+                    "--disable-setuid-sandbox",
+                    "--disable-dev-shm-usage",
+                ]
+            )
+        except Exception as e:
+            log(f"Fatal error launching browser: {e}")
+            raise
+        
+        try:
+            context = browser.new_context()
+            page = context.new_page()
+        except Exception as e:
+            log(f"Fatal error creating context/page: {e}")
+            try:
+                browser.close()
+            except Exception:
+                pass
+            raise
+        
+        try:
+            # Scrape the pet data using the scraping server (no CSV save)
+            data = _scrape_pet_page(page, pet_link, scraping_key)
+            
+            # Count failed fields
+            expected_fields = [
+                "name", "location", "age", "gender", "size", "color", "breed",
+                "spayed_neutered", "vaccinated", "special_needs",
+                "kids_compatible", "dogs_compatible", "cats_compatible",
+                "about_me", "image"
+            ]
+            
+            failed_count = 0
+            for field in expected_fields:
+                value = data.get(field)
+                # Check if field failed to be read
+                if isinstance(value, bool):
+                    # Boolean field was read successfully (True or False means field was found)
+                    pass
+                elif value is None or value == "":
+                    # Field failed to be read (None or empty string)
+                    failed_count += 1
+            
+            return data, failed_count
+        finally:
+            try:
+                page.close()
+            except Exception:
+                pass
+            try:
+                context.close()
+            except Exception:
+                pass
+            try:
+                browser.close()
+            except Exception:
+                pass
 
 
 def scrape_pet(pet_link: str) -> Dict[str, str]:
