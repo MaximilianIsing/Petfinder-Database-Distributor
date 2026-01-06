@@ -7,12 +7,12 @@ import os
 import requests
 from playwright.sync_api import sync_playwright
 
-SCRAPING_KEY_FILE = "scrapingkey.txt"
+SCRAPING_KEY_FILE = "endpointkey.txt"
 SCRAPING_SERVER_URL = "https://petfinder-scraper.onrender.com/scrape-js"
 
 
 def load_scraping_key() -> str:
-    """Load the scraping API key from scrapingkey.txt."""
+    """Load the scraping API key from endpointkey.txt."""
     try:
         with open(SCRAPING_KEY_FILE, "r", encoding="utf-8") as f:
             key = f.read().strip()

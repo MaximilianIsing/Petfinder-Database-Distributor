@@ -43,7 +43,7 @@ data/
 *.json
 
 # Scraping key (sensitive)
-scrapingkey.txt
+endpointkey.txt
 
 # OS
 .DS_Store

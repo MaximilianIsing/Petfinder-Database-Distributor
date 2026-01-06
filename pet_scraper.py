@@ -37,12 +37,12 @@ os.makedirs(DATA_DIR, exist_ok=True)
 
 PET_CSV = os.path.join(DATA_DIR, "pets.csv")
 LOG_PATH = os.path.join(DATA_DIR, "pet_scraper.log")
-SCRAPING_KEY_FILE = "scrapingkey.txt"
+SCRAPING_KEY_FILE = "endpointkey.txt"
 SCRAPING_SERVER_URL = "https://petfinder-scraper.onrender.com/scrape"
 
 
 def load_scraping_key() -> str:
-    """Load the scraping API key from scrapingkey.txt."""
+    """Load the scraping API key from endpointkey.txt."""
     try:
         with open(SCRAPING_KEY_FILE, "r", encoding="utf-8") as f:
             key = f.read().strip()
@@ -342,6 +342,7 @@ def get_pet_csv_fields() -> list:
     """Return the ordered field names for pets.csv."""
     return [
         "link",
+        "pet_type",
         "name",
         "location",
         "age",
@@ -380,6 +381,7 @@ def save_pet_to_csv(pet_data: Dict[str, str], csv_path: str = PET_CSV) -> None:
         try:
             with open(csv_path, newline="", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
+                existing_fieldnames = reader.fieldnames or []
                 for r in reader:
                     if r.get("link", "").strip() == pet_link:
                         # Update existing row
@@ -398,7 +400,7 @@ def save_pet_to_csv(pet_data: Dict[str, str], csv_path: str = PET_CSV) -> None:
                                 updated_row[col] = r.get(col, "")
                         rows.append(updated_row)
                     else:
-                        # Preserve other rows
+                        # Preserve other rows, ensuring all fields are present
                         normalized_row = {col: r.get(col, "") for col in ordered_fields}
                         rows.append(normalized_row)
         except Exception as e:
@@ -533,13 +535,14 @@ def scrape_pet_data_only(pet_link: str) -> Tuple[Dict[str, str], int]:
                 pass
 
 
-def scrape_pet(pet_link: str) -> Dict[str, str]:
+def scrape_pet(pet_link: str, pet_type: str = "") -> Dict[str, str]:
     """
     Scrape information from a single pet page.
     This is the main function to be called externally.
     
     Args:
         pet_link: URL to the pet's page
+        pet_type: Type of pet ("dog" or "cat") - will be added to CSV
         
     Returns:
         Dictionary containing scraped pet information
@@ -581,7 +584,10 @@ def scrape_pet(pet_link: str) -> Dict[str, str]:
             # Scrape the pet data using the scraping server
             data = _scrape_pet_page(page, pet_link, scraping_key)
             
-            # Save to CSV
+            # Add pet_type to data
+            data["pet_type"] = pet_type
+            
+            # Save to CSV (will check for duplicates by link)
             save_pet_to_csv(data)
             
             return data
