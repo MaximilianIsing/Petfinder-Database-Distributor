@@ -7,6 +7,7 @@ import csv
 import os
 import sys
 import time
+import subprocess
 from threading import Thread
 
 from flask import Flask, jsonify
@@ -27,6 +28,29 @@ server_status = {
     "total_pets_verified": 0,
     "total_pets_removed": 0,
 }
+
+
+def ensure_playwright_installed():
+    """Ensure Playwright Chromium is installed at runtime."""
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            # Try to launch chromium - if it fails, install it
+            try:
+                browser = p.chromium.launch(headless=True)
+                browser.close()
+                log("Playwright Chromium is already installed")
+            except Exception:
+                log("Playwright Chromium not found, installing...")
+                subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"], 
+                             check=False, capture_output=True)
+                log("Playwright Chromium installation attempted")
+    except Exception as e:
+        log(f"Error checking/installing Playwright: {e}")
+
+
+# Ensure Playwright is installed when server starts
+ensure_playwright_installed()
 
 
 def get_existing_links() -> set:
