@@ -4,18 +4,24 @@ __pycache__/
 *$py.class
 *.so
 .Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# Scraper runtime files
-scraper_progress.json
-slug_cache.json
-scraper.log
-slug_misses.log
-scanned.csv.tmp
-
-# API keys
-endpointkey.txt
-
-# Environment
+# Virtual environments
 venv/
 env/
 ENV/
@@ -28,7 +34,27 @@ ENV/
 *.swo
 *~
 
+# Data and logs
+data/
+/data/
+**/data/
+*.log
+*.csv
+*.json
+
+# Scraping key (sensitive)
+scrapingkey.txt
+
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# Playwright
+.playwright/
+
+# Temporary files
+*.tmp
+*.bak
+*.cache
 

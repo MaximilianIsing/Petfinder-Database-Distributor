@@ -1,8 +1,8 @@
 services:
   - type: web
-    name: college-scraper
+    name: Petfinder-Scraper
     runtime: python
-    plan: free
+    plan: starter
     buildCommand: pip install --upgrade pip && pip install -r requirements.txt
     startCommand: gunicorn --bind 0.0.0.0:$PORT --preload --workers 1 --threads 4 --log-level info --access-logfile - --error-logfile - --capture-output server:api_app
     envVars:
