@@ -3,8 +3,10 @@ services:
     name: Petfinder-Scraper
     runtime: python
     plan: starter
-    buildCommand: python3.11 -m pip install --upgrade pip && python3.11 -m pip install -r requirements.txt && python3.11 -m playwright install --with-deps chromium
+    buildCommand: python3.11 -m pip install --upgrade pip && python3.11 -m pip install -r requirements.txt && python3.11 -m playwright install chromium
     startCommand: gunicorn --bind 0.0.0.0:$PORT --preload --workers 1 --threads 4 --log-level info --access-logfile - --error-logfile - --capture-output server:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.5
+      - key: PLAYWRIGHT_BROWSERS_PATH
+        value: /opt/render/.cache/ms-playwright
