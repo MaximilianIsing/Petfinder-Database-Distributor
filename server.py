@@ -204,6 +204,15 @@ def index():
     })
 
 
+@app.route("/health")
+def health():
+    """Health check endpoint for Render."""
+    return jsonify({
+        "status": "running" if server_status["running"] else "stopped",
+        "message": "Petfinder Scraper Server"
+    }), 200
+
+
 @app.route("/status")
 def status():
     """Get server status."""
