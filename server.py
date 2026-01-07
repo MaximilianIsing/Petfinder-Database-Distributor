@@ -87,6 +87,8 @@ ensure_playwright_installed()
 def cleanup_old_timestamps():
     """Remove timestamps older than 15 minutes from the global list."""
     global pet_scraping_timestamps
+    if not pet_scraping_timestamps:
+        return
     current_time = time.time()
     fifteen_minutes_ago = current_time - (15 * 60)
     pet_scraping_timestamps = [ts for ts in pet_scraping_timestamps if ts >= fifteen_minutes_ago]
@@ -234,6 +236,8 @@ def scrape_pets_from_page(page: int, pet_type: str) -> int:
     Returns:
         Number of new pets scraped (excluding duplicates)
     """
+    global pet_scraping_timestamps
+    
     url = f"https://www.petfinder.com/search/{pet_type}s-for-adoption/us/ny/newyork/?distance=anywhere&page={page}"
     log(f"Scraping page {page} for {pet_type}s: {url}")
     
@@ -259,14 +263,18 @@ def scrape_pets_from_page(page: int, pet_type: str) -> int:
                 existing_links.add(link)  # Add to set to avoid duplicates in same batch
                 
                 # Only track timestamp if a new pet was actually saved (not skipped or duplicate)
-                was_new_pet = result.get("_was_new_pet", False)
-                if was_new_pet:
-                    new_pets_count += 1
-                    server_status["total_pets_scraped"] += 1
-                    # Track timestamp for rate calculation - append to global list
-                    global pet_scraping_timestamps
-                    pet_scraping_timestamps.append(time.time())
-                    log(f"Added timestamp for new pet. Total timestamps: {len(pet_scraping_timestamps)}")
+                if result and isinstance(result, dict):
+                    was_new_pet = result.get("_was_new_pet", False)
+                    if was_new_pet:
+                        new_pets_count += 1
+                        server_status["total_pets_scraped"] += 1
+                        # Track timestamp for rate calculation - append to global list
+                        pet_scraping_timestamps.append(time.time())
+                        log(f"Added timestamp for new pet. Total timestamps: {len(pet_scraping_timestamps)}")
+                    else:
+                        log(f"Pet was not new (duplicate or skipped), not adding timestamp. _was_new_pet={was_new_pet}")
+                else:
+                    log(f"Warning: scrape_pet returned unexpected result type: {type(result)}, value: {result}")
                 
                 # Force garbage collection every 5 pets to free memory
                 if i % 5 == 0:
