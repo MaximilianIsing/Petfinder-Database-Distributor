@@ -10,6 +10,7 @@ import os
 import sys
 import time
 import subprocess
+import threading
 from threading import Thread
 
 from flask import Flask, jsonify
@@ -57,27 +58,129 @@ server_status = {
 }
 
 
-def ensure_playwright_installed():
-    """Ensure Playwright Chromium is installed at runtime."""
+# Flag to track if dependencies are ready
+dependencies_ready = False
+dependencies_ready_lock = threading.Lock()
+
+
+def ensure_playwright_installed() -> bool:
+    """
+    Ensure Playwright Chromium is installed at runtime.
+    Returns True if Chromium is ready, False otherwise.
+    """
     try:
         from playwright.sync_api import sync_playwright
         with sync_playwright() as p:
             # Try to launch chromium - if it fails, install it
             try:
-                browser = p.chromium.launch(headless=True)
+                browser = p.chromium.launch(
+                    headless=True,
+                    args=[
+                        "--no-sandbox",
+                        "--disable-setuid-sandbox",
+                        "--disable-dev-shm-usage",
+                    ]
+                )
                 browser.close()
-                log("Playwright Chromium is already installed")
-            except Exception:
-                log("Playwright Chromium not found, installing...")
-                subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"], 
-                             check=False, capture_output=True)
-                log("Playwright Chromium installation attempted")
+                log("Playwright Chromium is already installed and working")
+                return True
+            except Exception as e:
+                log(f"Playwright Chromium not found or not working: {e}")
+                log("Installing Playwright Chromium...")
+                result = subprocess.run(
+                    [sys.executable, "-m", "playwright", "install", "chromium"],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=300  # 5 minute timeout
+                )
+                
+                if result.returncode == 0:
+                    log("Playwright Chromium installation completed successfully")
+                    # Verify installation by trying to launch again
+                    try:
+                        browser = p.chromium.launch(
+                            headless=True,
+                            args=[
+                                "--no-sandbox",
+                                "--disable-setuid-sandbox",
+                                "--disable-dev-shm-usage",
+                            ]
+                        )
+                        browser.close()
+                        log("Playwright Chromium verified and working")
+                        return True
+                    except Exception as verify_error:
+                        log(f"Playwright Chromium installation verification failed: {verify_error}")
+                        return False
+                else:
+                    log(f"Playwright Chromium installation failed: {result.stderr}")
+                    return False
+    except ImportError:
+        log("Error: Playwright module not found. Please install with: pip install playwright")
+        return False
     except Exception as e:
         log(f"Error checking/installing Playwright: {e}")
+        return False
 
 
-# Ensure Playwright is installed when server starts
-ensure_playwright_installed()
+def ensure_all_dependencies() -> bool:
+    """
+    Ensure all dependencies are installed and ready.
+    Returns True if all dependencies are ready, False otherwise.
+    """
+    log("Checking dependencies...")
+    
+    # Check Playwright
+    playwright_ready = ensure_playwright_installed()
+    if not playwright_ready:
+        log("ERROR: Playwright Chromium is not ready")
+        return False
+    
+    # Check if required modules can be imported
+    try:
+        import requests
+        import flask
+        log("All Python dependencies are available")
+    except ImportError as e:
+        log(f"ERROR: Missing Python dependency: {e}")
+        return False
+    
+    log("All dependencies are ready!")
+    return True
+
+
+def initialize_dependencies():
+    """Initialize all dependencies and wait until they're ready."""
+    global dependencies_ready
+    
+    max_attempts = 5
+    attempt = 0
+    
+    while attempt < max_attempts:
+        attempt += 1
+        log(f"Initializing dependencies (attempt {attempt}/{max_attempts})...")
+        
+        if ensure_all_dependencies():
+            dependencies_ready = True
+            log("✓ All dependencies initialized successfully")
+            return True
+        else:
+            if attempt < max_attempts:
+                wait_time = 10 * attempt  # Exponential backoff: 10s, 20s, 30s, 40s
+                log(f"Dependencies not ready, waiting {wait_time}s before retry...")
+                time.sleep(wait_time)
+            else:
+                log("ERROR: Failed to initialize dependencies after all attempts")
+                log("Server will continue but scraping may not work until dependencies are installed")
+                return False
+    
+    return False
+
+
+# Initialize dependencies before starting server
+log("Starting dependency initialization...")
+initialize_dependencies()
 
 
 # Cache for existing links to avoid reading CSV repeatedly
@@ -214,9 +317,30 @@ def scrape_pets_from_page(page: int, pet_type: str) -> int:
     log(f"Scraping page {page} for {pet_type}s: {url}")
     
     try:
-        # Get links from search page
-        links = extract_links_from_html(url=url)
+        # Get links from search page with retry logic
+        max_retries = 3
+        retry_delay = 5  # seconds
+        links = []
+        
+        for attempt in range(max_retries):
+            try:
+                links = extract_links_from_html(url=url)
+                break  # Success, exit retry loop
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    log(f"Error fetching links (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {retry_delay}s...")
+                    time.sleep(retry_delay)
+                else:
+                    # Last attempt failed, re-raise the exception
+                    log(f"Failed to fetch links after {max_retries} attempts: {e}")
+                    raise
+        
         log(f"Found {len(links)} links on page {page} for {pet_type}s")
+        
+        # If no links found, the page might be empty or invalid
+        if len(links) == 0:
+            log(f"No links found on page {page} for {pet_type}s - page may be empty or invalid")
+            return 0
         
         # Get existing links to avoid duplicates (use cache)
         existing_links = get_existing_links()
@@ -379,6 +503,26 @@ def get_memory_usage_mb() -> float:
 
 def scraping_loop():
     """Main scraping loop that runs continuously."""
+    global dependencies_ready
+    
+    # Wait for dependencies to be ready before starting
+    log("Waiting for dependencies to be ready before starting scraping loop...")
+    max_wait_time = 300  # Wait up to 5 minutes
+    wait_interval = 5  # Check every 5 seconds
+    waited = 0
+    
+    while not dependencies_ready and waited < max_wait_time:
+        log(f"Dependencies not ready yet, waiting... ({waited}/{max_wait_time}s)")
+        time.sleep(wait_interval)
+        waited += wait_interval
+    
+    if not dependencies_ready:
+        log("WARNING: Starting scraping loop without confirmed dependency readiness")
+        log("This may cause errors. Attempting to verify dependencies one more time...")
+        if not ensure_all_dependencies():
+            log("ERROR: Dependencies still not ready. Scraping loop will likely fail.")
+            log("Please ensure Playwright Chromium is installed: python -m playwright install chromium")
+    
     log("Starting scraping loop...")
     server_status["running"] = True
     
@@ -633,8 +777,17 @@ def get_pets_csv():
 
 # Start scraping loop in background thread when module is imported
 # This ensures it starts with gunicorn as well
-scraping_thread = Thread(target=scraping_loop, daemon=True)
-scraping_thread.start()
+# Note: The scraping loop will wait for dependencies to be ready before starting
+def start_scraping_thread():
+    """Start the scraping thread after a short delay to allow Flask to initialize."""
+    time.sleep(2)  # Give Flask a moment to start
+    scraping_thread = Thread(target=scraping_loop, daemon=True)
+    scraping_thread.start()
+    log("Scraping thread started (will wait for dependencies)")
+
+# Start the scraping thread
+start_thread = Thread(target=start_scraping_thread, daemon=True)
+start_thread.start()
 
 if __name__ == "__main__":
     # Start Flask server (for local development)
