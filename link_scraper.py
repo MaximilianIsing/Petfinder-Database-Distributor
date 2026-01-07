@@ -3,6 +3,7 @@ Link scraper to extract pet links from Petfinder search page HTML.
 Extracts links from the search results by calling the scraping server.
 """
 
+import gc
 import os
 import requests
 from playwright.sync_api import sync_playwright
@@ -148,6 +149,9 @@ def extract_links_from_html(html_content: str = None, url: str = None) -> list:
             page.close()
             context.close()
             browser.close()
+        
+        # Force garbage collection to free browser memory
+        gc.collect()
     
     return links
 

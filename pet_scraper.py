@@ -9,6 +9,7 @@ Run (Linux-friendly):
 """
 
 import csv
+import gc
 import os
 import re
 import sys
@@ -361,6 +362,52 @@ def get_pet_csv_fields() -> list:
     ]
 
 
+def should_skip_pet(pet_data: Dict[str, str]) -> tuple[bool, str]:
+    """
+    Validate pet data before saving.
+    
+    Args:
+        pet_data: Dictionary containing pet information
+        
+    Returns:
+        Tuple of (should_skip, reason). should_skip is True if pet should not be saved.
+    """
+    # Check for placeholder names
+    name = pet_data.get("name", "").strip().lower()
+    if name == "dog" or name == "cat":
+        return True, f"Placeholder name detected: '{pet_data.get('name', '')}'"
+    
+    # Fields to validate (excluding link and pet_type which are always present)
+    fields_to_check = [
+        "name", "location", "age", "gender", "size", "color", "breed",
+        "spayed_neutered", "vaccinated", "special_needs",
+        "kids_compatible", "dogs_compatible", "cats_compatible",
+        "about_me", "image"
+    ]
+    
+    # Count null/empty fields
+    null_count = 0
+    total_fields = len(fields_to_check)
+    
+    for field in fields_to_check:
+        value = pet_data.get(field)
+        # Check if field is null, empty string, or False (for boolean fields, False is valid, but None/empty is not)
+        if value is None:
+            null_count += 1
+        elif isinstance(value, bool):
+            # Boolean fields: False is valid, only None is considered null
+            pass
+        elif isinstance(value, str) and value.strip() == "":
+            null_count += 1
+    
+    # Check if >= 50% of fields are null
+    null_percentage = (null_count / total_fields) * 100
+    if null_percentage >= 50:
+        return True, f"Too many null fields: {null_count}/{total_fields} ({null_percentage:.1f}%)"
+    
+    return False, ""
+
+
 def save_pet_to_csv(pet_data: Dict[str, str], csv_path: str = PET_CSV) -> None:
     """
     Save or update pet data in CSV file.
@@ -587,8 +634,17 @@ def scrape_pet(pet_link: str, pet_type: str = "") -> Dict[str, str]:
             # Add pet_type to data
             data["pet_type"] = pet_type
             
+            # Validate pet data before saving
+            should_skip, reason = should_skip_pet(data)
+            if should_skip:
+                log(f"Skipping pet {pet_link}: {reason}")
+                return data
+            
             # Save to CSV (will check for duplicates by link)
             save_pet_to_csv(data)
+            
+            # Force garbage collection after each pet to free browser memory
+            gc.collect()
             
             return data
         finally:
