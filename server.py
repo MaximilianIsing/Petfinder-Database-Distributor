@@ -57,6 +57,7 @@ server_status = {
 }
 
 # Track pet scraping timestamps for rate calculation
+# This list persists across requests and is cleaned up periodically
 pet_scraping_timestamps = []
 
 
@@ -81,6 +82,26 @@ def ensure_playwright_installed():
 
 # Ensure Playwright is installed when server starts
 ensure_playwright_installed()
+
+
+def cleanup_old_timestamps():
+    """Remove timestamps older than 15 minutes from the global list."""
+    global pet_scraping_timestamps
+    current_time = time.time()
+    fifteen_minutes_ago = current_time - (15 * 60)
+    pet_scraping_timestamps = [ts for ts in pet_scraping_timestamps if ts >= fifteen_minutes_ago]
+
+
+def timestamp_cleanup_loop():
+    """Background thread that cleans up old timestamps every 30 minutes."""
+    while True:
+        try:
+            time.sleep(30 * 60)  # Sleep for 30 minutes
+            cleanup_old_timestamps()
+            log(f"Cleaned up old timestamps. Remaining: {len(pet_scraping_timestamps)}")
+        except Exception as e:
+            log(f"Error in timestamp cleanup loop: {e}")
+            time.sleep(60)  # Wait a minute before retrying
 
 
 # Cache for existing links to avoid reading CSV repeatedly
@@ -242,8 +263,10 @@ def scrape_pets_from_page(page: int, pet_type: str) -> int:
                 if was_new_pet:
                     new_pets_count += 1
                     server_status["total_pets_scraped"] += 1
-                    # Track timestamp for rate calculation
+                    # Track timestamp for rate calculation - append to global list
+                    global pet_scraping_timestamps
                     pet_scraping_timestamps.append(time.time())
+                    log(f"Added timestamp for new pet. Total timestamps: {len(pet_scraping_timestamps)}")
                 
                 # Force garbage collection every 5 pets to free memory
                 if i % 5 == 0:
@@ -651,13 +674,16 @@ def get_scraping_rate():
     """
     global pet_scraping_timestamps
     
-    current_time = time.time()
-    fifteen_minutes_ago = current_time - (15 * 60)  # 15 minutes in seconds
+    # Log the global timestamps before cleanup
+    log(f"Rate endpoint called. Global timestamps before cleanup: {pet_scraping_timestamps}")
     
-    # Clean up old timestamps (older than 15 minutes)
-    pet_scraping_timestamps = [ts for ts in pet_scraping_timestamps if ts >= fifteen_minutes_ago]
+    # Immediately clean up old timestamps (older than 15 minutes)
+    cleanup_old_timestamps()
     
-    # Count pets scraped in the last 15 minutes
+    # Log the global timestamps after cleanup
+    log(f"Global timestamps after cleanup: {pet_scraping_timestamps}")
+    
+    # Count pets scraped in the last 15 minutes (length of cleaned list)
     pets_in_last_15_min = len(pet_scraping_timestamps)
     
     # Calculate rate: pets per minute
@@ -674,6 +700,11 @@ def get_scraping_rate():
 # This ensures it starts with gunicorn as well
 scraping_thread = Thread(target=scraping_loop, daemon=True)
 scraping_thread.start()
+
+# Start timestamp cleanup loop in background thread
+# This cleans up old timestamps every 30 minutes
+cleanup_thread = Thread(target=timestamp_cleanup_loop, daemon=True)
+cleanup_thread.start()
 
 if __name__ == "__main__":
     # Start Flask server (for local development)
