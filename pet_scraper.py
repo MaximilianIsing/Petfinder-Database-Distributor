@@ -408,10 +408,13 @@ def should_skip_pet(pet_data: Dict[str, str]) -> tuple[bool, str]:
     return False, ""
 
 
-def save_pet_to_csv(pet_data: Dict[str, str], csv_path: str = PET_CSV) -> None:
+def save_pet_to_csv(pet_data: Dict[str, str], csv_path: str = PET_CSV) -> bool:
     """
     Save or update pet data in CSV file.
     Uses link as the unique identifier.
+    
+    Returns:
+        True if a new pet was added, False if it was an update to an existing pet
     """
     # Replace actual newlines in about_me with literal \n string to keep it on one line
     if "about_me" in pet_data and pet_data["about_me"]:
@@ -488,6 +491,9 @@ def save_pet_to_csv(pet_data: Dict[str, str], csv_path: str = PET_CSV) -> None:
         # Atomic replace
         os.replace(tmp, csv_path)
         log(f"Updated CSV: {csv_path} (wrote {row_count} rows)")
+        
+        # Return True if it was a new pet (not found), False if it was an update
+        return not found
     except Exception as e:
         log(f"Error writing CSV file {csv_path}: {e}")
         # Try to clean up temp file
@@ -641,7 +647,11 @@ def scrape_pet(pet_link: str, pet_type: str = "") -> Dict[str, str]:
                 return data
             
             # Save to CSV (will check for duplicates by link)
-            save_pet_to_csv(data)
+            # Returns True if new pet was added, False if it was an update
+            was_new_pet = save_pet_to_csv(data)
+            
+            # Store whether this was a new pet for rate tracking
+            data["_was_new_pet"] = was_new_pet
             
             # Force garbage collection after each pet to free browser memory
             gc.collect()

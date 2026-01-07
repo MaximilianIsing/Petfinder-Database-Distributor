@@ -234,13 +234,16 @@ def scrape_pets_from_page(page: int, pet_type: str) -> int:
                     continue
                 
                 log(f"Scraping {pet_type} {i}/{len(links)}: {link}")
-                scrape_pet(link, pet_type=pet_type)
+                result = scrape_pet(link, pet_type=pet_type)
                 existing_links.add(link)  # Add to set to avoid duplicates in same batch
-                new_pets_count += 1
-                server_status["total_pets_scraped"] += 1
                 
-                # Track timestamp for rate calculation
-                pet_scraping_timestamps.append(time.time())
+                # Only track timestamp if a new pet was actually saved (not skipped or duplicate)
+                was_new_pet = result.get("_was_new_pet", False)
+                if was_new_pet:
+                    new_pets_count += 1
+                    server_status["total_pets_scraped"] += 1
+                    # Track timestamp for rate calculation
+                    pet_scraping_timestamps.append(time.time())
                 
                 # Force garbage collection every 5 pets to free memory
                 if i % 5 == 0:
