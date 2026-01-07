@@ -23,7 +23,7 @@
             background: white;
             padding: 3rem;
             border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
         h1 {
             font-size: 2.5rem;
@@ -42,18 +42,18 @@
         }
         h3 {
             font-size: 1.4rem;
-            margin-top: 1.5rem;
-            margin-bottom: 0.75rem;
-            color: #2d3748;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            color: #4a5568;
         }
         p {
             margin-bottom: 1rem;
             color: #4a5568;
         }
-        .intro {
-            font-size: 1.1rem;
-            color: #718096;
-            margin-bottom: 2rem;
+        hr {
+            border: none;
+            border-top: 1px solid #e2e8f0;
+            margin: 2rem 0;
         }
         code {
             background: #f7fafc;
@@ -70,7 +70,9 @@
             border-radius: 8px;
             overflow-x: auto;
             margin: 1rem 0;
-            font-size: 0.9rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
         }
         pre code {
             background: transparent;
@@ -81,189 +83,132 @@
             width: 100%;
             border-collapse: collapse;
             margin: 1.5rem 0;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        th, td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid #e2e8f0;
+            background: white;
         }
         th {
             background: #667eea;
             color: white;
+            padding: 0.75rem;
+            text-align: left;
             font-weight: 600;
+        }
+        td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e2e8f0;
         }
         tr:hover {
             background: #f7fafc;
         }
+        blockquote {
+            border-left: 4px solid #667eea;
+            padding-left: 1rem;
+            margin: 1rem 0;
+            color: #4a5568;
+            font-style: italic;
+        }
         .endpoint {
             background: #f7fafc;
-            padding: 1.5rem;
+            padding: 1rem;
             border-radius: 8px;
             margin: 1.5rem 0;
             border-left: 4px solid #667eea;
         }
-        .endpoint-header {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-        .method {
-            background: #48bb78;
+        .endpoint-method {
+            display: inline-block;
+            background: #667eea;
             color: white;
             padding: 0.25rem 0.75rem;
             border-radius: 4px;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.9em;
+            margin-right: 0.5rem;
         }
-        .method.get {
-            background: #4299e1;
-        }
-        .method.post {
-            background: #48bb78;
-        }
-        .path {
+        .endpoint-path {
             font-family: 'Courier New', monospace;
-            font-size: 1.1rem;
+            font-size: 1.1em;
             color: #2d3748;
-            font-weight: 600;
         }
-        .auth-badge {
+        .badge {
             display: inline-block;
-            background: #fbbf24;
-            color: #78350f;
-            padding: 0.25rem 0.75rem;
+            padding: 0.25rem 0.5rem;
             border-radius: 4px;
-            font-size: 0.85rem;
+            font-size: 0.85em;
             font-weight: 600;
             margin-left: 0.5rem;
         }
-        .no-auth-badge {
-            display: inline-block;
-            background: #48bb78;
+        .badge-required {
+            background: #fc8181;
             color: white;
-            padding: 0.25rem 0.75rem;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            margin-left: 0.5rem;
         }
-        .note {
-            background: #edf2f7;
-            border-left: 4px solid #4299e1;
-            padding: 1rem;
-            margin: 1rem 0;
-            border-radius: 4px;
-        }
-        .note strong {
+        .badge-optional {
+            background: #cbd5e0;
             color: #2d3748;
         }
-        ul, ol {
-            margin-left: 2rem;
-            margin-bottom: 1rem;
-        }
-        li {
-            margin-bottom: 0.5rem;
-            color: #4a5568;
-        }
-        .status-code {
-            display: inline-block;
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            font-weight: 600;
-            font-size: 0.85rem;
-        }
-        .status-200 {
-            background: #c6f6d5;
-            color: #22543d;
-        }
-        .status-401 {
-            background: #fed7d7;
-            color: #742a2a;
-        }
-        .status-500 {
-            background: #feebc8;
-            color: #7c2d12;
+        .footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+            color: #718096;
+            font-size: 0.9em;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Petfinder Scraper API Documentation</h1>
-        <p class="intro">Welcome to the Petfinder Scraper API documentation. This API provides access to a continuously updated database of adoptable pets from Petfinder.</p>
+        <p>Welcome to the Petfinder Scraper API documentation. This API provides access to a continuously updated database of adoptable pets from Petfinder.</p>
+
+        <hr>
 
         <h2>Authentication</h2>
         <p>The pets endpoint requires authentication using an endpoint key. The key can be provided in two ways:</p>
-        <ul>
+        <ul style="margin-left: 2rem; margin-bottom: 1rem;">
             <li><strong>Query Parameter:</strong> <code>?key=YOUR_KEY</code></li>
             <li><strong>Header:</strong> <code>X-API-Key: YOUR_KEY</code></li>
         </ul>
-        <div class="note">
+        <blockquote>
             <strong>Note:</strong> The endpoint key is stored securely on the server and is required for accessing pet data.
-        </div>
+        </blockquote>
+
+        <hr>
 
         <h2>API Endpoints</h2>
 
         <div class="endpoint">
-            <div class="endpoint-header">
-                <span class="method get">GET</span>
-                <span class="path">/</span>
-                <span class="no-auth-badge">No Auth</span>
-            </div>
-            <h3>Health Check</h3>
+            <h3>
+                <span class="endpoint-method">GET</span>
+                <span class="endpoint-path">/</span>
+            </h3>
+            <p><strong>Health Check</strong></p>
             <p>Check if the server is running and healthy.</p>
             
-            <h4>Response:</h4>
+            <h4 style="margin-top: 1rem; margin-bottom: 0.5rem;">Response:</h4>
             <pre><code>{
   "status": "running",
   "message": "Petfinder Scraper Server"
 }</code></pre>
 
-            <h4>Example Request:</h4>
+            <h4 style="margin-top: 1rem; margin-bottom: 0.5rem;">Example Request:</h4>
             <pre><code>curl https://petfinder-database-distributor.onrender.com/</code></pre>
 
-            <h4>Response Codes:</h4>
-            <ul>
-                <li><span class="status-code status-200">200 OK</span> - Server is running</li>
+            <h4 style="margin-top: 1rem; margin-bottom: 0.5rem;">Response Codes:</h4>
+            <ul style="margin-left: 2rem;">
+                <li><code>200 OK</code> - Server is running</li>
             </ul>
         </div>
 
         <div class="endpoint">
-            <div class="endpoint-header">
-                <span class="method get">GET</span>
-                <span class="path">/rate</span>
-                <span class="no-auth-badge">No Auth</span>
-            </div>
-            <h3>Get Scraping Rate</h3>
-            <p>Get the rate of pet retrieval in the past 15 minutes. Calculated as the number of pets scraped in the last 15 minutes divided by 15.</p>
-            
-            <h4>Response:</h4>
-            <pre><code>{
-  "rate": 2.5,
-  "pets_in_last_15_minutes": 38,
-  "unit": "pets per minute"
-}</code></pre>
-
-            <h4>Example Request:</h4>
-            <pre><code>curl https://petfinder-database-distributor.onrender.com/rate</code></pre>
-
-            <h4>Response Codes:</h4>
-            <ul>
-                <li><span class="status-code status-200">200 OK</span> - Successfully retrieved rate</li>
-            </ul>
-        </div>
-
-        <div class="endpoint">
-            <div class="endpoint-header">
-                <span class="method get">GET</span>
-                <span class="path">/pets.csv</span>
-                <span class="auth-badge">Auth Required</span>
-            </div>
-            <h3>Get All Pets (CSV)</h3>
+            <h3>
+                <span class="endpoint-method">GET</span>
+                <span class="endpoint-path">/pets.csv</span>
+            </h3>
+            <p><strong>Get All Pets (CSV)</strong></p>
             <p>Download all pets from the database as a CSV file. This endpoint requires authentication.</p>
             
-            <h4>Query Parameters:</h4>
+            <p><strong>Authentication:</strong> Required (endpoint key)</p>
+
+            <h4 style="margin-top: 1rem; margin-bottom: 0.5rem;">Query Parameters:</h4>
             <table>
                 <thead>
                     <tr>
@@ -277,13 +222,13 @@
                     <tr>
                         <td><code>key</code></td>
                         <td>string</td>
-                        <td>Yes</td>
+                        <td><span class="badge badge-required">Yes</span></td>
                         <td>Your endpoint key for authentication</td>
                     </tr>
                 </tbody>
             </table>
 
-            <h4>Headers:</h4>
+            <h4 style="margin-top: 1rem; margin-bottom: 0.5rem;">Headers:</h4>
             <table>
                 <thead>
                     <tr>
@@ -301,14 +246,14 @@
                 </tbody>
             </table>
 
-            <h4>Response:</h4>
-            <ul>
+            <h4 style="margin-top: 1rem; margin-bottom: 0.5rem;">Response:</h4>
+            <ul style="margin-left: 2rem; margin-bottom: 1rem;">
                 <li><strong>Content-Type:</strong> <code>text/csv</code></li>
                 <li><strong>Content-Disposition:</strong> <code>attachment; filename=pets.csv</code></li>
                 <li><strong>Body:</strong> CSV file containing all pet records</li>
             </ul>
 
-            <h4>Example Requests:</h4>
+            <h4 style="margin-top: 1rem; margin-bottom: 0.5rem;">Example Requests:</h4>
             <p>Using query parameter:</p>
             <pre><code>curl "https://petfinder-database-distributor.onrender.com/pets.csv?key=YOUR_KEY" -o pets.csv</code></pre>
 
@@ -317,13 +262,15 @@
      https://petfinder-database-distributor.onrender.com/pets.csv \
      -o pets.csv</code></pre>
 
-            <h4>Response Codes:</h4>
-            <ul>
-                <li><span class="status-code status-200">200 OK</span> - Successfully retrieved pets data</li>
-                <li><span class="status-code status-401">401 Unauthorized</span> - Invalid or missing endpoint key</li>
-                <li><span class="status-code status-500">500 Internal Server Error</span> - Server error while reading data</li>
+            <h4 style="margin-top: 1rem; margin-bottom: 0.5rem;">Response Codes:</h4>
+            <ul style="margin-left: 2rem;">
+                <li><code>200 OK</code> - Successfully retrieved pets data</li>
+                <li><code>401 Unauthorized</code> - Invalid or missing endpoint key</li>
+                <li><code>500 Internal Server Error</code> - Server error while reading data</li>
             </ul>
         </div>
+
+        <hr>
 
         <h2>CSV File Format</h2>
         <p>The pets CSV file contains the following columns:</p>
@@ -423,9 +370,11 @@
                 </tr>
             </tbody>
         </table>
-        <div class="note">
+        <blockquote>
             <strong>Note:</strong> Boolean values are stored as strings (<code>"True"</code> or <code>"False"</code>). The <code>about_me</code> field may contain escaped newline characters (<code>\n</code>) to keep the CSV format valid.
-        </div>
+        </blockquote>
+
+        <hr>
 
         <h2>Error Codes</h2>
         <table>
@@ -437,28 +386,32 @@
             </thead>
             <tbody>
                 <tr>
-                    <td><span class="status-code status-200">200 OK</span></td>
+                    <td><code>200 OK</code></td>
                     <td>Request successful</td>
                 </tr>
                 <tr>
-                    <td><span class="status-code status-401">401 Unauthorized</span></td>
+                    <td><code>401 Unauthorized</code></td>
                     <td>Invalid or missing endpoint key</td>
                 </tr>
                 <tr>
-                    <td><span class="status-code status-500">500 Internal Server Error</span></td>
+                    <td><code>500 Internal Server Error</code></td>
                     <td>Server error occurred</td>
                 </tr>
             </tbody>
         </table>
 
+        <hr>
+
         <h2>Data Updates</h2>
         <p>The database is continuously updated by scraping Petfinder search pages. The scraper:</p>
-        <ul>
+        <ul style="margin-left: 2rem; margin-bottom: 1rem;">
             <li>Scrapes pages 1-10,000 for both dogs and cats</li>
             <li>Verifies all entries periodically to remove invalid links</li>
             <li>Prevents duplicate entries by checking pet links</li>
             <li>Updates the CSV file in real-time</li>
         </ul>
+
+        <hr>
 
         <h2>Example Usage</h2>
 
@@ -471,10 +424,6 @@ BASE_URL = "https://petfinder-database-distributor.onrender.com"
 
 # Health check
 response = requests.get(f"{BASE_URL}/")
-print(response.json())
-
-# Get scraping rate
-response = requests.get(f"{BASE_URL}/rate")
 print(response.json())
 
 # Get pets CSV
@@ -497,15 +446,6 @@ const fs = require('fs');
 
 const API_KEY = 'your-endpoint-key-here';
 const BASE_URL = 'petfinder-database-distributor.onrender.com';
-
-// Get scraping rate
-https.get(`https://${BASE_URL}/rate`, (res) => {
-  let data = '';
-  res.on('data', (chunk) => { data += chunk; });
-  res.on('end', () => {
-    console.log(JSON.parse(data));
-  });
-});
 
 // Get pets CSV
 const options = {
@@ -533,8 +473,8 @@ req.on('error', (e) => {
 
 req.end();</code></pre>
 
-        <div class="note" style="margin-top: 2rem; text-align: center;">
-            <strong>Last Updated:</strong> January 2026
+        <div class="footer">
+            <p><strong>Last Updated:</strong> January 2026</p>
         </div>
     </div>
 </body>
