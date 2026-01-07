@@ -4,23 +4,14 @@ Continuously scrapes Petfinder search pages and maintains a database of pets.
 """
 
 import csv
-import gc
 import json
 import os
 import sys
 import time
 import subprocess
-import threading
 from threading import Thread
 
 from flask import Flask, jsonify
-
-# Optional import for memory monitoring
-try:
-    import psutil
-    PSUTIL_AVAILABLE = True
-except ImportError:
-    PSUTIL_AVAILABLE = False
 
 from link_scraper import extract_links_from_html, load_scraping_key
 from pet_scraper import scrape_pet, get_pet_csv_fields, PET_CSV, log
@@ -58,148 +49,31 @@ server_status = {
 }
 
 
-# Flag to track if dependencies are ready
-dependencies_ready = False
-dependencies_ready_lock = threading.Lock()
-
-
-def ensure_playwright_installed() -> bool:
-    """
-    Ensure Playwright Chromium is installed at runtime.
-    Returns True if Chromium is ready, False otherwise.
-    """
+def ensure_playwright_installed():
+    """Ensure Playwright Chromium is installed at runtime."""
     try:
         from playwright.sync_api import sync_playwright
         with sync_playwright() as p:
             # Try to launch chromium - if it fails, install it
             try:
-                browser = p.chromium.launch(
-                    headless=True,
-                    args=[
-                        "--no-sandbox",
-                        "--disable-setuid-sandbox",
-                        "--disable-dev-shm-usage",
-                    ]
-                )
+                browser = p.chromium.launch(headless=True)
                 browser.close()
-                log("Playwright Chromium is already installed and working")
-                return True
-            except Exception as e:
-                log(f"Playwright Chromium not found or not working: {e}")
-                log("Installing Playwright Chromium...")
-                result = subprocess.run(
-                    [sys.executable, "-m", "playwright", "install", "chromium"],
-                    check=False,
-                    capture_output=True,
-                    text=True,
-                    timeout=300  # 5 minute timeout
-                )
-                
-                if result.returncode == 0:
-                    log("Playwright Chromium installation completed successfully")
-                    # Verify installation by trying to launch again
-                    try:
-                        browser = p.chromium.launch(
-                            headless=True,
-                            args=[
-                                "--no-sandbox",
-                                "--disable-setuid-sandbox",
-                                "--disable-dev-shm-usage",
-                            ]
-                        )
-                        browser.close()
-                        log("Playwright Chromium verified and working")
-                        return True
-                    except Exception as verify_error:
-                        log(f"Playwright Chromium installation verification failed: {verify_error}")
-                        return False
-                else:
-                    log(f"Playwright Chromium installation failed: {result.stderr}")
-                    return False
-    except ImportError:
-        log("Error: Playwright module not found. Please install with: pip install playwright")
-        return False
+                log("Playwright Chromium is already installed")
+            except Exception:
+                log("Playwright Chromium not found, installing...")
+                subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"], 
+                             check=False, capture_output=True)
+                log("Playwright Chromium installation attempted")
     except Exception as e:
         log(f"Error checking/installing Playwright: {e}")
-        return False
 
 
-def ensure_all_dependencies() -> bool:
-    """
-    Ensure all dependencies are installed and ready.
-    Returns True if all dependencies are ready, False otherwise.
-    """
-    log("Checking dependencies...")
-    
-    # Check Playwright
-    playwright_ready = ensure_playwright_installed()
-    if not playwright_ready:
-        log("ERROR: Playwright Chromium is not ready")
-        return False
-    
-    # Check if required modules can be imported
-    try:
-        import requests
-        import flask
-        log("All Python dependencies are available")
-    except ImportError as e:
-        log(f"ERROR: Missing Python dependency: {e}")
-        return False
-    
-    log("All dependencies are ready!")
-    return True
+# Ensure Playwright is installed when server starts
+ensure_playwright_installed()
 
 
-def initialize_dependencies():
-    """Initialize all dependencies and wait until they're ready."""
-    global dependencies_ready
-    
-    max_attempts = 5
-    attempt = 0
-    
-    while attempt < max_attempts:
-        attempt += 1
-        log(f"Initializing dependencies (attempt {attempt}/{max_attempts})...")
-        
-        if ensure_all_dependencies():
-            dependencies_ready = True
-            log("✓ All dependencies initialized successfully")
-            return True
-        else:
-            if attempt < max_attempts:
-                wait_time = 10 * attempt  # Exponential backoff: 10s, 20s, 30s, 40s
-                log(f"Dependencies not ready, waiting {wait_time}s before retry...")
-                time.sleep(wait_time)
-            else:
-                log("ERROR: Failed to initialize dependencies after all attempts")
-                log("Server will continue but scraping may not work until dependencies are installed")
-                return False
-    
-    return False
-
-
-# Initialize dependencies before starting server
-log("Starting dependency initialization...")
-initialize_dependencies()
-
-
-# Cache for existing links to avoid reading CSV repeatedly
-_existing_links_cache = None
-_existing_links_cache_time = 0
-CACHE_TTL = 300  # Cache for 5 minutes
-
-def get_existing_links(force_refresh: bool = False) -> set:
-    """
-    Get all existing links from pets.csv to check for duplicates.
-    Uses caching to reduce memory pressure.
-    """
-    global _existing_links_cache, _existing_links_cache_time
-    
-    # Return cached version if still valid
-    if not force_refresh and _existing_links_cache is not None:
-        if time.time() - _existing_links_cache_time < CACHE_TTL:
-            return _existing_links_cache
-    
+def get_existing_links() -> set:
+    """Get all existing links from pets.csv to check for duplicates."""
     existing_links = set()
     if os.path.exists(PET_CSV):
         try:
@@ -211,11 +85,6 @@ def get_existing_links(force_refresh: bool = False) -> set:
                         existing_links.add(link)
         except Exception as e:
             log(f"Error reading existing links: {e}")
-    
-    # Update cache
-    _existing_links_cache = existing_links
-    _existing_links_cache_time = time.time()
-    
     return existing_links
 
 
@@ -317,32 +186,11 @@ def scrape_pets_from_page(page: int, pet_type: str) -> int:
     log(f"Scraping page {page} for {pet_type}s: {url}")
     
     try:
-        # Get links from search page with retry logic
-        max_retries = 3
-        retry_delay = 5  # seconds
-        links = []
-        
-        for attempt in range(max_retries):
-            try:
-                links = extract_links_from_html(url=url)
-                break  # Success, exit retry loop
-            except Exception as e:
-                if attempt < max_retries - 1:
-                    log(f"Error fetching links (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {retry_delay}s...")
-                    time.sleep(retry_delay)
-                else:
-                    # Last attempt failed, re-raise the exception
-                    log(f"Failed to fetch links after {max_retries} attempts: {e}")
-                    raise
-        
+        # Get links from search page
+        links = extract_links_from_html(url=url)
         log(f"Found {len(links)} links on page {page} for {pet_type}s")
         
-        # If no links found, the page might be empty or invalid
-        if len(links) == 0:
-            log(f"No links found on page {page} for {pet_type}s - page may be empty or invalid")
-            return 0
-        
-        # Get existing links to avoid duplicates (use cache)
+        # Get existing links to avoid duplicates
         existing_links = get_existing_links()
         new_pets_count = 0
         
@@ -360,10 +208,6 @@ def scrape_pets_from_page(page: int, pet_type: str) -> int:
                 new_pets_count += 1
                 server_status["total_pets_scraped"] += 1
                 
-                # Force garbage collection every 5 pets to free memory
-                if i % 5 == 0:
-                    gc.collect()
-                
                 # Small delay to avoid overwhelming the server
                 time.sleep(1)
                 
@@ -371,19 +215,11 @@ def scrape_pets_from_page(page: int, pet_type: str) -> int:
                 log(f"Error scraping pet {link}: {e}")
                 continue
         
-        # Refresh cache after scraping (new pets were added)
-        if new_pets_count > 0:
-            get_existing_links(force_refresh=True)
-        
-        # Force garbage collection after page
-        gc.collect()
-        
         log(f"Page {page} for {pet_type}s: {new_pets_count} new pets scraped")
         return new_pets_count
         
     except Exception as e:
         log(f"Error scraping page {page} for {pet_type}s: {e}")
-        gc.collect()  # Clean up on error
         return 0
 
 
@@ -456,10 +292,6 @@ def verify_all_pets(resume_from_link: str = None) -> int:
                     removed_count += 1
                     server_status["total_pets_removed"] += 1
                 
-                # Force garbage collection every 10 pets during verification
-                if len(all_rows) % 10 == 0:
-                    gc.collect()
-                
                 # Small delay
                 time.sleep(0.5)
         
@@ -474,63 +306,19 @@ def verify_all_pets(resume_from_link: str = None) -> int:
             # Atomic replace
             os.replace(tmp, PET_CSV)
             log(f"Verification complete: {removed_count} pets removed, {len(all_rows)} pets remain")
-            
-            # Refresh cache after verification (links may have been removed)
-            get_existing_links(force_refresh=True)
-        
-        # Force garbage collection after verification
-        gc.collect()
         
     except Exception as e:
         log(f"Error during verification: {e}")
-        gc.collect()  # Clean up on error
         # Progress is already saved, so we can resume from the last saved link
         raise  # Re-raise to allow scraping_loop to handle it
     
     return removed_count
 
 
-def get_memory_usage_mb() -> float:
-    """Get current memory usage in MB."""
-    if not PSUTIL_AVAILABLE:
-        return 0.0
-    try:
-        process = psutil.Process(os.getpid())
-        return process.memory_info().rss / 1024 / 1024
-    except Exception:
-        return 0.0
-
-
 def scraping_loop():
     """Main scraping loop that runs continuously."""
-    global dependencies_ready
-    
-    # Wait for dependencies to be ready before starting
-    log("Waiting for dependencies to be ready before starting scraping loop...")
-    max_wait_time = 300  # Wait up to 5 minutes
-    wait_interval = 5  # Check every 5 seconds
-    waited = 0
-    
-    while not dependencies_ready and waited < max_wait_time:
-        log(f"Dependencies not ready yet, waiting... ({waited}/{max_wait_time}s)")
-        time.sleep(wait_interval)
-        waited += wait_interval
-    
-    if not dependencies_ready:
-        log("WARNING: Starting scraping loop without confirmed dependency readiness")
-        log("This may cause errors. Attempting to verify dependencies one more time...")
-        if not ensure_all_dependencies():
-            log("ERROR: Dependencies still not ready. Scraping loop will likely fail.")
-            log("Please ensure Playwright Chromium is installed: python -m playwright install chromium")
-    
     log("Starting scraping loop...")
     server_status["running"] = True
-    
-    # Track start time for periodic restarts
-    loop_start_time = time.time()
-    last_memory_check = time.time()
-    MEMORY_CHECK_INTERVAL = 300  # Check memory every 5 minutes
-    RESTART_INTERVAL = 3600  # Restart loop every hour to prevent memory leaks
     
     # Load progress from disk (resume from where we left off)
     mode, start_page, start_pet_type, verification_link = load_progress()
@@ -558,31 +346,6 @@ def scraping_loop():
     
     while server_status["running"]:
         try:
-            # Check if we need to restart the loop (every hour) to prevent memory leaks
-            elapsed = time.time() - loop_start_time
-            if elapsed >= RESTART_INTERVAL:
-                log(f"Restarting scraping loop after {elapsed/3600:.1f} hours to prevent memory leaks")
-                # Save current progress before restarting
-                if mode == "scraping":
-                    save_progress(page=start_page, pet_type=start_pet_type, mode="scraping")
-                # Force garbage collection
-                gc.collect()
-                # Break to restart the loop
-                break
-            
-            # Periodic memory monitoring
-            if time.time() - last_memory_check >= MEMORY_CHECK_INTERVAL:
-                memory_mb = get_memory_usage_mb()
-                log(f"Memory usage: {memory_mb:.1f} MB")
-                last_memory_check = time.time()
-                
-                # If memory is very high (>2GB), force cleanup
-                if memory_mb > 2048:
-                    log("High memory usage detected, forcing aggressive cleanup...")
-                    gc.collect()
-                    get_existing_links(force_refresh=True)  # Clear cache
-                    gc.collect()
-            
             # Scrape pages from start_page to 10000 for dogs and cats
             for page in range(start_page, 10001):
                 if not server_status["running"]:
@@ -613,21 +376,10 @@ def scraping_loop():
                     
                     # Save progress after each page/pet_type combination
                     save_progress(page=page, pet_type=pet_type, mode="scraping")
-                    
-                    # Periodic memory cleanup every 10 pages
-                    if page % 10 == 0:
-                        gc.collect()
-                        log(f"Memory cleanup after page {page}")
                 
                 # Reset start_page after first iteration to ensure normal flow
                 if page == start_page:
                     start_page = 1
-                
-                # Periodic cache refresh every 50 pages to prevent stale data
-                if page % 50 == 0:
-                    get_existing_links(force_refresh=True)
-                    gc.collect()
-                    log(f"Refreshed link cache after page {page}")
             
             # After reaching page 10000, verify all pets
             log("Reached page 10000, starting verification...")
@@ -649,16 +401,7 @@ def scraping_loop():
         except Exception as e:
             log(f"Error in scraping loop: {e}")
             # Progress is already saved, so we can resume from where we left off
-            gc.collect()  # Clean up on error
             time.sleep(60)  # Wait before retrying
-        
-        # If we broke out of the loop (for restart), restart it
-        if server_status["running"]:
-            log("Restarting scraping loop...")
-            loop_start_time = time.time()
-            last_memory_check = time.time()
-            # Reload progress to continue from where we left off
-            mode, start_page, start_pet_type, verification_link = load_progress()
 
 
 @app.route("/")
@@ -777,17 +520,8 @@ def get_pets_csv():
 
 # Start scraping loop in background thread when module is imported
 # This ensures it starts with gunicorn as well
-# Note: The scraping loop will wait for dependencies to be ready before starting
-def start_scraping_thread():
-    """Start the scraping thread after a short delay to allow Flask to initialize."""
-    time.sleep(2)  # Give Flask a moment to start
-    scraping_thread = Thread(target=scraping_loop, daemon=True)
-    scraping_thread.start()
-    log("Scraping thread started (will wait for dependencies)")
-
-# Start the scraping thread
-start_thread = Thread(target=start_scraping_thread, daemon=True)
-start_thread.start()
+scraping_thread = Thread(target=scraping_loop, daemon=True)
+scraping_thread.start()
 
 if __name__ == "__main__":
     # Start Flask server (for local development)

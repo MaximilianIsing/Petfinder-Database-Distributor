@@ -3,7 +3,6 @@ Link scraper to extract pet links from Petfinder search page HTML.
 Extracts links from the search results by calling the scraping server.
 """
 
-import gc
 import os
 import requests
 from playwright.sync_api import sync_playwright
@@ -53,29 +52,13 @@ def fetch_html_from_server(url: str, key: str, wait_timeout: int = 20, additiona
         
         if response.status_code == 200:
             html_content = response.text
-            if not html_content:
-                raise Exception(f"Empty response from scraping server for URL: {url}")
             return html_content
         elif response.status_code == 401:
-            # Try to parse JSON, but handle if it's not valid JSON
-            try:
-                error_data = response.json()
-                error_msg = error_data.get("error", "Authentication failed")
-            except (ValueError, AttributeError):
-                error_msg = f"Authentication failed (HTTP {response.status_code}): {response.text[:200]}"
+            error_msg = response.json().get("error", "Authentication failed")
             raise Exception(f"Authentication failed: {error_msg}")
         else:
-            # Try to parse JSON, but handle if it's not valid JSON
-            try:
-                error_data = response.json()
-                error_msg = error_data.get("error", f"HTTP {response.status_code}")
-            except (ValueError, AttributeError):
-                # Response is not valid JSON, use raw text
-                error_text = response.text[:200] if response.text else "(empty response)"
-                error_msg = f"HTTP {response.status_code}: {error_text}"
+            error_msg = response.json().get("error", f"HTTP {response.status_code}")
             raise Exception(f"Scraping server error: {error_msg}")
-    except requests.exceptions.Timeout:
-        raise Exception(f"Timeout connecting to scraping server for URL: {url}")
     except requests.exceptions.RequestException as e:
         raise Exception(f"Error connecting to scraping server: {e}")
 
@@ -165,9 +148,6 @@ def extract_links_from_html(html_content: str = None, url: str = None) -> list:
             page.close()
             context.close()
             browser.close()
-        
-        # Force garbage collection to free browser memory
-        gc.collect()
     
     return links
 

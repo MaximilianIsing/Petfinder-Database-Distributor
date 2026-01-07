@@ -9,7 +9,6 @@ Run (Linux-friendly):
 """
 
 import csv
-import gc
 import os
 import re
 import sys
@@ -642,9 +641,6 @@ def scrape_pet(pet_link: str, pet_type: str = "") -> Dict[str, str]:
             
             # Save to CSV (will check for duplicates by link)
             save_pet_to_csv(data)
-            
-            # Force garbage collection after each pet to free browser memory
-            gc.collect()
             
             return data
         finally:
